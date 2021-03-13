@@ -6,12 +6,14 @@ import cryptoRandomString = require("crypto-random-string")
 import cron from 'node-cron';
 import { generateKoiMiddleware } from './middleware';
 import tmp from 'tmp';
+import { sign } from 'node:crypto';
 
 // these will be populated when the library is instantiated
 var logFileLocation: string;
 var rawLogFileLocation: string;
 var proofFileLocation: string;
-var fileDIR: string;
+var node_id: string; // this will be used to deduplicate logs between gateway nodes
+var fileDIR: string; // the desired log file directory (if the tmp module is not an option, i.e. docker containers)
 
 function setDefaults() {
   logFileLocation = "";
@@ -55,9 +57,11 @@ export const joinKoi = async function (app: ExpressApp, path?: string) {
   }
   setDefaults()
   await generateLogFiles()
-  const koiMiddleware = await generateKoiMiddleware(logFileLocation)
+  node_id = await getLogSalt()
+  const koiMiddleware = await generateKoiMiddleware(rawLogFileLocation)
   app.use(koiMiddleware);
-  app.get("/logs", koiLogsHelper);
+  app.get("/logs/", koiLogsHelper);
+  app.get("/logs/raw/", koiRawLogsHelper);
   koiLogsDailyTask() // start the daily log task
 }
 
@@ -74,10 +78,23 @@ export const koiLogsHelper = function (req: Request, res: Response) {
   })
 }
 
+export const koiRawLogsHelper = function (req: Request, res: Response) {
+  // console.log('logs file path is ', logFileLocation)
+  fs.readFile(rawLogFileLocation, 'utf8', (err: any, data: any) => {
+    if (err) {
+      console.error(err)
+      res.status(500).send(err);
+      return
+    }
+    // console.log(data)
+    res.status(200).send(data);
+  })
+}
+
 export const koiLogsDailyTask = function () {
   return cron.schedule('0 0 * * *', async function () {
     console.log('running the log cleanup task once per day on ', new Date());
-    var result = await logsTask()
+    let result = await logsTask()
     console.log('daily log task returned ', result)
   });
 }
@@ -85,14 +102,14 @@ export const koiLogsDailyTask = function () {
 export const logsTask = async function () {
   return new Promise(async (resolve, reject) => {
     try {
-      var masterSalt = getLogSalt()
+      let masterSalt = getLogSalt()
 
       // then get the raw logs
-      var rawLogs = await readRawLogs(masterSalt) as RawLogs[];
+      let rawLogs = await readRawLogs(masterSalt) as RawLogs[];
 
-      var sorted = await sortAndFilterLogs(rawLogs) as FormattedLogsArray;
+      let sorted = await sortAndFilterLogs(rawLogs) as FormattedLogsArray;
 
-      var result = await writeDailyLogs(sorted);
+      let result = await writeDailyLogs(sorted);
 
       // last, clear old logs
       await clearRawLogs();
@@ -112,7 +129,8 @@ export const logsTask = async function () {
 */
 async function readRawLogs(masterSalt: string) {
   return new Promise((resolve, reject) => {
-    var logs = fs.readFileSync(rawLogFileLocation).toString().split("\n");
+    let fullLogs = fs.readFileSync(rawLogFileLocation);
+    let logs = fullLogs.toString().split("\n");
     var prettyLogs = [] as RawLogs[];
     for (var log of logs) {
       try {
@@ -123,13 +141,10 @@ async function readRawLogs(masterSalt: string) {
             logJSON.address = sha256.hmac(masterSalt, logJSON.address)
             prettyLogs.push(logJSON)
           } catch (err) {
-            console.error('error reading json', err)
+            console.error('error reading json in Koi log middleware', err)
             reject(err)
           }
-        } else {
-          console.error('tried to parse log, but skipping because log is ', log)
-          reject({})
-        }
+        } 
       } catch (err) {
         console.error('err', err)
         reject(err)
@@ -140,15 +155,20 @@ async function readRawLogs(masterSalt: string) {
 }
 
 /*
-  @readRawLogs
-    retrieves the raw logs and reads them into a json array
+  @writeDailyLogs
+    generates the daily log file (/logs/)
 */
 async function writeDailyLogs(logs: FormattedLogsArray) {
   return new Promise((resolve, reject) => {
+    // generate the log payload
     var data = {
+      gateway: node_id,
       lastUpdate: new Date(),
-      summary: new Array()
+      summary: new Array(),
+      signature: ''
     }
+    // sign it 
+    data.signature = signLogs(data)
     for (var key in logs) {
       var log = logs[key]
       if (log && log.addresses) {
@@ -161,7 +181,6 @@ async function writeDailyLogs(logs: FormattedLogsArray) {
         resolve({ success: false, logs: data, error: err })
       } else {
         resolve({ success: true, logs: data })
-
       }
     });
   })
@@ -173,8 +192,8 @@ async function generateLogFiles() {
       // create three files (access.log, daily.log, and proofs.log) with names corresponding to the date
       var date = new Date();
       var names = [
-        date.toISOString().slice(0, 10) + '-access.log',
         date.toISOString().slice(0, 10) + '-daily.log',
+        date.toISOString().slice(0, 10) + '-access.log',
         date.toISOString().slice(0, 10) + '-proofs.log',
       ]
 
@@ -226,6 +245,13 @@ async function createLogFile(name: string) {
       });
     }
   });
+}
+
+/*
+  generates and returns a signature for a koi logs payload
+*/
+function signLogs(data: object) {
+  return sha256(cryptoRandomString({ length: 10 })); // TODO
 }
 
 /*
