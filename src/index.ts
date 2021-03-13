@@ -6,12 +6,14 @@ import cryptoRandomString = require("crypto-random-string")
 import cron from 'node-cron';
 import { generateKoiMiddleware } from './middleware';
 import tmp from 'tmp';
+import { sign } from 'node:crypto';
 
 // these will be populated when the library is instantiated
 var logFileLocation: string;
 var rawLogFileLocation: string;
 var proofFileLocation: string;
-var fileDIR: string;
+var node_id: string; // this will be used to deduplicate logs between gateway nodes
+var fileDIR: string; // the desired log file directory (if the tmp module is not an option, i.e. docker containers)
 
 function setDefaults() {
   logFileLocation = "";
@@ -55,6 +57,7 @@ export const joinKoi = async function (app: ExpressApp, path?: string) {
   }
   setDefaults()
   await generateLogFiles()
+  node_id = await getLogSalt()
   const koiMiddleware = await generateKoiMiddleware(rawLogFileLocation)
   app.use(koiMiddleware);
   app.get("/logs/", koiLogsHelper);
@@ -89,7 +92,7 @@ export const koiRawLogsHelper = function (req: Request, res: Response) {
 }
 
 export const koiLogsDailyTask = function () {
-  return cron.schedule('*/10 * * * * *', async function () {
+  return cron.schedule('0 0 * * *', async function () {
     console.log('running the log cleanup task once per day on ', new Date());
     let result = await logsTask()
     console.log('daily log task returned ', result)
@@ -126,11 +129,8 @@ export const logsTask = async function () {
 */
 async function readRawLogs(masterSalt: string) {
   return new Promise((resolve, reject) => {
-    console.log('rawLogs are at ' + rawLogFileLocation)
     let fullLogs = fs.readFileSync(rawLogFileLocation);
-    console.log('logs are', fullLogs);
     let logs = fullLogs.toString().split("\n");
-    console.log('logString is ', logs);
     var prettyLogs = [] as RawLogs[];
     for (var log of logs) {
       try {
@@ -141,12 +141,10 @@ async function readRawLogs(masterSalt: string) {
             logJSON.address = sha256.hmac(masterSalt, logJSON.address)
             prettyLogs.push(logJSON)
           } catch (err) {
-            console.error('error reading json', err)
+            console.error('error reading json in Koi log middleware', err)
             reject(err)
           }
-        } else {
-          console.error('tried to parse log, but skipping because log is ', log)
-        }
+        } 
       } catch (err) {
         console.error('err', err)
         reject(err)
@@ -157,15 +155,20 @@ async function readRawLogs(masterSalt: string) {
 }
 
 /*
-  @readRawLogs
-    retrieves the raw logs and reads them into a json array
+  @writeDailyLogs
+    generates the daily log file (/logs/)
 */
 async function writeDailyLogs(logs: FormattedLogsArray) {
   return new Promise((resolve, reject) => {
+    // generate the log payload
     var data = {
+      gateway: node_id,
       lastUpdate: new Date(),
-      summary: new Array()
+      summary: new Array(),
+      signature: ''
     }
+    // sign it 
+    data.signature = signLogs(data)
     for (var key in logs) {
       var log = logs[key]
       if (log && log.addresses) {
@@ -178,7 +181,6 @@ async function writeDailyLogs(logs: FormattedLogsArray) {
         resolve({ success: false, logs: data, error: err })
       } else {
         resolve({ success: true, logs: data })
-
       }
     });
   })
@@ -243,6 +245,13 @@ async function createLogFile(name: string) {
       });
     }
   });
+}
+
+/*
+  generates and returns a signature for a koi logs payload
+*/
+function signLogs(data: object) {
+  return sha256(cryptoRandomString({ length: 10 })); // TODO
 }
 
 /*

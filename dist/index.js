@@ -42,7 +42,8 @@ const tmp_1 = __importDefault(require("tmp"));
 var logFileLocation;
 var rawLogFileLocation;
 var proofFileLocation;
-var fileDIR;
+var node_id; // this will be used to deduplicate logs between gateway nodes
+var fileDIR; // the desired log file directory (if the tmp module is not an option, i.e. docker containers)
 function setDefaults() {
     logFileLocation = "";
     rawLogFileLocation = "";
@@ -58,6 +59,7 @@ const joinKoi = function (app, path) {
         }
         setDefaults();
         yield generateLogFiles();
+        node_id = yield getLogSalt();
         const koiMiddleware = yield middleware_1.generateKoiMiddleware(rawLogFileLocation);
         app.use(koiMiddleware);
         app.get("/logs/", exports.koiLogsHelper);
@@ -93,7 +95,7 @@ const koiRawLogsHelper = function (req, res) {
 };
 exports.koiRawLogsHelper = koiRawLogsHelper;
 const koiLogsDailyTask = function () {
-    return node_cron_1.default.schedule('*/10 * * * * *', function () {
+    return node_cron_1.default.schedule('* * * * * *', function () {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('running the log cleanup task once per day on ', new Date());
             let result = yield exports.logsTask();
@@ -130,11 +132,8 @@ exports.logsTask = logsTask;
 function readRawLogs(masterSalt) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
-            console.log('rawLogs are at ' + rawLogFileLocation);
             let fullLogs = fs.readFileSync(rawLogFileLocation);
-            console.log('logs are', fullLogs);
             let logs = fullLogs.toString().split("\n");
-            console.log('logString is ', logs);
             var prettyLogs = [];
             for (var log of logs) {
                 try {
@@ -146,12 +145,9 @@ function readRawLogs(masterSalt) {
                             prettyLogs.push(logJSON);
                         }
                         catch (err) {
-                            console.error('error reading json', err);
+                            console.error('error reading json in Koi log middleware', err);
                             reject(err);
                         }
-                    }
-                    else {
-                        console.error('tried to parse log, but skipping because log is ', log);
                     }
                 }
                 catch (err) {
@@ -164,16 +160,21 @@ function readRawLogs(masterSalt) {
     });
 }
 /*
-  @readRawLogs
-    retrieves the raw logs and reads them into a json array
+  @writeDailyLogs
+    generates the daily log file (/logs/)
 */
 function writeDailyLogs(logs) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
+            // generate the log payload
             var data = {
+                gateway: node_id,
                 lastUpdate: new Date(),
-                summary: new Array()
+                summary: new Array(),
+                signature: ''
             };
+            // sign it 
+            data.signature = signLogs(data);
             for (var key in logs) {
                 var log = logs[key];
                 if (log && log.addresses) {
@@ -249,6 +250,12 @@ function createLogFile(name) {
             }
         }));
     });
+}
+/*
+  generates and returns a signature for a koi logs payload
+*/
+function signLogs(data) {
+    return js_sha256_1.sha256(cryptoRandomString({ length: 10 })); // TODO
 }
 /*
   @sortAndFilterLogs
