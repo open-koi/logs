@@ -55,9 +55,10 @@ export const joinKoi = async function (app: ExpressApp, path?: string) {
   }
   setDefaults()
   await generateLogFiles()
-  const koiMiddleware = await generateKoiMiddleware(logFileLocation)
+  const koiMiddleware = await generateKoiMiddleware(rawLogFileLocation)
   app.use(koiMiddleware);
-  app.get("/logs", koiLogsHelper);
+  app.get("/logs/", koiLogsHelper);
+  app.get("/logs/raw/", koiRawLogsHelper);
   koiLogsDailyTask() // start the daily log task
 }
 
@@ -74,10 +75,23 @@ export const koiLogsHelper = function (req: Request, res: Response) {
   })
 }
 
+export const koiRawLogsHelper = function (req: Request, res: Response) {
+  // console.log('logs file path is ', logFileLocation)
+  fs.readFile(rawLogFileLocation, 'utf8', (err: any, data: any) => {
+    if (err) {
+      console.error(err)
+      res.status(500).send(err);
+      return
+    }
+    // console.log(data)
+    res.status(200).send(data);
+  })
+}
+
 export const koiLogsDailyTask = function () {
-  return cron.schedule('0 0 * * *', async function () {
+  return cron.schedule('*/10 * * * * *', async function () {
     console.log('running the log cleanup task once per day on ', new Date());
-    var result = await logsTask()
+    let result = await logsTask()
     console.log('daily log task returned ', result)
   });
 }
@@ -85,14 +99,14 @@ export const koiLogsDailyTask = function () {
 export const logsTask = async function () {
   return new Promise(async (resolve, reject) => {
     try {
-      var masterSalt = getLogSalt()
+      let masterSalt = getLogSalt()
 
       // then get the raw logs
-      var rawLogs = await readRawLogs(masterSalt) as RawLogs[];
+      let rawLogs = await readRawLogs(masterSalt) as RawLogs[];
 
-      var sorted = await sortAndFilterLogs(rawLogs) as FormattedLogsArray;
+      let sorted = await sortAndFilterLogs(rawLogs) as FormattedLogsArray;
 
-      var result = await writeDailyLogs(sorted);
+      let result = await writeDailyLogs(sorted);
 
       // last, clear old logs
       await clearRawLogs();
@@ -112,7 +126,11 @@ export const logsTask = async function () {
 */
 async function readRawLogs(masterSalt: string) {
   return new Promise((resolve, reject) => {
-    var logs = fs.readFileSync(rawLogFileLocation).toString().split("\n");
+    console.log('rawLogs are at ' + rawLogFileLocation)
+    let fullLogs = fs.readFileSync(rawLogFileLocation);
+    console.log('logs are', fullLogs);
+    let logs = fullLogs.toString().split("\n");
+    console.log('logString is ', logs);
     var prettyLogs = [] as RawLogs[];
     for (var log of logs) {
       try {
@@ -128,7 +146,6 @@ async function readRawLogs(masterSalt: string) {
           }
         } else {
           console.error('tried to parse log, but skipping because log is ', log)
-          reject({})
         }
       } catch (err) {
         console.error('err', err)
@@ -173,8 +190,8 @@ async function generateLogFiles() {
       // create three files (access.log, daily.log, and proofs.log) with names corresponding to the date
       var date = new Date();
       var names = [
-        date.toISOString().slice(0, 10) + '-access.log',
         date.toISOString().slice(0, 10) + '-daily.log',
+        date.toISOString().slice(0, 10) + '-access.log',
         date.toISOString().slice(0, 10) + '-proofs.log',
       ]
 
