@@ -31,7 +31,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logsTask = exports.koiLogsDailyTask = exports.koiLogsHelper = exports.joinKoi = void 0;
+exports.logsTask = exports.koiLogsDailyTask = exports.koiRawLogsHelper = exports.koiLogsHelper = exports.joinKoi = void 0;
 const fs = __importStar(require("fs"));
 const js_sha256_1 = require("js-sha256");
 const cryptoRandomString = require("crypto-random-string");
@@ -42,7 +42,8 @@ const tmp_1 = __importDefault(require("tmp"));
 var logFileLocation;
 var rawLogFileLocation;
 var proofFileLocation;
-var fileDIR;
+var node_id; // this will be used to deduplicate logs between gateway nodes
+var fileDIR; // the desired log file directory (if the tmp module is not an option, i.e. docker containers)
 function setDefaults() {
     logFileLocation = "";
     rawLogFileLocation = "";
@@ -58,9 +59,11 @@ const joinKoi = function (app, path) {
         }
         setDefaults();
         yield generateLogFiles();
-        const koiMiddleware = yield middleware_1.generateKoiMiddleware(logFileLocation);
+        node_id = yield getLogSalt();
+        const koiMiddleware = yield middleware_1.generateKoiMiddleware(rawLogFileLocation);
         app.use(koiMiddleware);
-        app.get("/logs", exports.koiLogsHelper);
+        // app.get("/logs/", koiLogsHelper);
+        // app.get("/logs/raw/", koiRawLogsHelper);
         exports.koiLogsDailyTask(); // start the daily log task
     });
 };
@@ -78,11 +81,24 @@ const koiLogsHelper = function (req, res) {
     });
 };
 exports.koiLogsHelper = koiLogsHelper;
+const koiRawLogsHelper = function (req, res) {
+    // console.log('logs file path is ', logFileLocation)
+    fs.readFile(rawLogFileLocation, 'utf8', (err, data) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send(err);
+            return;
+        }
+        // console.log(data)
+        res.status(200).send(data);
+    });
+};
+exports.koiRawLogsHelper = koiRawLogsHelper;
 const koiLogsDailyTask = function () {
     return node_cron_1.default.schedule('0 0 * * *', function () {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('running the log cleanup task once per day on ', new Date());
-            var result = yield exports.logsTask();
+            let result = yield exports.logsTask();
             console.log('daily log task returned ', result);
         });
     });
@@ -92,11 +108,11 @@ const logsTask = function () {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
             try {
-                var masterSalt = getLogSalt();
+                let masterSalt = getLogSalt();
                 // then get the raw logs
-                var rawLogs = yield readRawLogs(masterSalt);
-                var sorted = yield sortAndFilterLogs(rawLogs);
-                var result = yield writeDailyLogs(sorted);
+                let rawLogs = yield readRawLogs(masterSalt);
+                let sorted = yield sortAndFilterLogs(rawLogs);
+                let result = yield writeDailyLogs(sorted);
                 // last, clear old logs
                 yield clearRawLogs();
                 resolve(result);
@@ -116,7 +132,8 @@ exports.logsTask = logsTask;
 function readRawLogs(masterSalt) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
-            var logs = fs.readFileSync(rawLogFileLocation).toString().split("\n");
+            let fullLogs = fs.readFileSync(rawLogFileLocation);
+            let logs = fullLogs.toString().split("\n");
             var prettyLogs = [];
             for (var log of logs) {
                 try {
@@ -128,13 +145,9 @@ function readRawLogs(masterSalt) {
                             prettyLogs.push(logJSON);
                         }
                         catch (err) {
-                            console.error('error reading json', err);
+                            console.error('error reading json in Koi log middleware', err);
                             reject(err);
                         }
-                    }
-                    else {
-                        console.error('tried to parse log, but skipping because log is ', log);
-                        reject({});
                     }
                 }
                 catch (err) {
@@ -147,16 +160,21 @@ function readRawLogs(masterSalt) {
     });
 }
 /*
-  @readRawLogs
-    retrieves the raw logs and reads them into a json array
+  @writeDailyLogs
+    generates the daily log file (/logs/)
 */
 function writeDailyLogs(logs) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
+            // generate the log payload
             var data = {
+                gateway: node_id,
                 lastUpdate: new Date(),
-                summary: new Array()
+                summary: new Array(),
+                signature: ''
             };
+            // sign it 
+            data.signature = signLogs(data);
             for (var key in logs) {
                 var log = logs[key];
                 if (log && log.addresses) {
@@ -182,8 +200,8 @@ function generateLogFiles() {
                 // create three files (access.log, daily.log, and proofs.log) with names corresponding to the date
                 var date = new Date();
                 var names = [
-                    date.toISOString().slice(0, 10) + '-access.log',
                     date.toISOString().slice(0, 10) + '-daily.log',
+                    date.toISOString().slice(0, 10) + '-access.log',
                     date.toISOString().slice(0, 10) + '-proofs.log',
                 ];
                 let paths = [];
@@ -232,6 +250,12 @@ function createLogFile(name) {
             }
         }));
     });
+}
+/*
+  generates and returns a signature for a koi logs payload
+*/
+function signLogs(data) {
+    return js_sha256_1.sha256(cryptoRandomString({ length: 10 })); // TODO
 }
 /*
   @sortAndFilterLogs
