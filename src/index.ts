@@ -57,7 +57,7 @@ export const joinKoi = async function (app: ExpressApp, path?: string) {
   await generateLogFiles()
   const koiMiddleware = await generateKoiMiddleware(logFileLocation)
   app.use(koiMiddleware);
-  app.get("/logs", koiLogsHelper);
+  // app.get("/logs", koiLogsHelper);
   koiLogsDailyTask() // start the daily log task
 }
 
