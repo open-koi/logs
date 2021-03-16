@@ -1,5 +1,5 @@
 const Express = require('express');
-const koiLogs = require('../dist/index.js').default;
+const koiLogs = require('../dist/index.js');
 
 console.log('koilogs is', koiLogs)
 

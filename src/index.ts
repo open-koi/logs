@@ -11,7 +11,7 @@ import {
   FormattedLogsArray
 } from './types';
 
-export default class koiLogs{
+class koiLogs{
   constructor(path: string) {
     if (path) {
       this.fileDIR = path;
@@ -249,6 +249,7 @@ export default class koiLogs{
   }
 }
 
+export = koiLogs;
 
 //////////////////////// Utility Functions //////////////////////////////
 /*

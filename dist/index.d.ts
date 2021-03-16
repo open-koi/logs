@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-export default class koiLogs {
+declare class koiLogs {
     constructor(path: string);
     logFileLocation: string;
     rawLogFileLocation: string;
@@ -18,3 +18,4 @@ export default class koiLogs {
     private writeDailyLogs;
     private createLogFile;
 }
+export = koiLogs;

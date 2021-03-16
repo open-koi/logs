@@ -30,7 +30,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 const fs = __importStar(require("fs"));
 const js_sha256_1 = require("js-sha256");
 const cryptoRandomString = require("crypto-random-string");
@@ -273,7 +272,6 @@ class koiLogs {
         });
     }
 }
-exports.default = koiLogs;
 //////////////////////// Utility Functions //////////////////////////////
 /*
   generates and returns a signature for a koi logs payload
@@ -330,4 +328,5 @@ function writeEmptyFile(location) {
 function getLogSalt() {
     return js_sha256_1.sha256(cryptoRandomString({ length: 10 }));
 }
+module.exports = koiLogs;
 //# sourceMappingURL=index.js.map
