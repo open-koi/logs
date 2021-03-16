@@ -5,12 +5,14 @@
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint *.ts",
-    "build": "tsc",
+    "build": "rimraf dist && tsc && rollup -c rollup.config.js",
     "test": "npm run build && node test/test.js"
   },
   "author": "Koi Labs Inc.",
   "license": "ISC",
   "dependencies": {
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-typescript": "^8.2.0",
     "@types/express": "^4.17.11",
     "@types/morgan": "^1.9.2",
     "@types/node-cron": "^2.0.3",
@@ -25,10 +27,13 @@
     "path": "^0.12.7",
     "shortid": "^2.2.16",
     "temp": "^0.9.4",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "tslib": "^2.1.0",
+    "typescript": "^4.2.3"
   },
   "devDependencies": {
-    "@types/node": "^14.14.28"
+    "@types/node": "^14.14.28",
+    "rollup": "^2.41.4"
   },
   "directories": {
     "test": "test"

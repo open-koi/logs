@@ -16,9 +16,10 @@ export async function generateKoiMiddleware (logFileLocation: string) {
       resolve(morgan('{"address":":remote-addr","user":":remote-user","date":":date","method":":method","url":":url","type":"HTTP/:http-version","status":":status","res":{"length":":res[content-length]","time" : ":response-time ms"}, "ref":":referrer","agent":":user-agent"}',
         { stream: accessLogStream }
       ));
-
-    } catch(err) {
-      reject(err)
+      console.log('passed morgan point')
+    } catch (err) {
+      console.log('error in middleware', err)
+      // reject(err)
     }
     
   })

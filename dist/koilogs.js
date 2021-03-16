@@ -1,41 +1,12 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+'use strict';
+
 Object.defineProperty(exports, "__esModule", { value: true });
-const fs = __importStar(require("fs"));
+const tslib_1 = require("tslib");
+const fs = tslib_1.__importStar(require("fs"));
 const js_sha256_1 = require("js-sha256");
 const cryptoRandomString = require("crypto-random-string");
-const node_cron_1 = __importDefault(require("node-cron"));
-const tmp_1 = __importDefault(require("tmp"));
+const node_cron_1 = tslib_1.__importDefault(require("node-cron"));
+const tmp_1 = tslib_1.__importDefault(require("tmp"));
 const middleware_1 = require("./middleware");
 class koiLogs {
     constructor(path) {
@@ -44,7 +15,6 @@ class koiLogs {
         }
         this.logFileLocation = "";
         this.rawLogFileLocation = "";
-        var _this = this;
         // this.middleware = function () {
         //   return this.generateKoiMiddleware(_this.rawLogFileLocation);
         // }
@@ -53,8 +23,8 @@ class koiLogs {
         this.node_id = getLogSalt();
     }
     generateLogFiles() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => tslib_1.__awaiter(this, void 0, void 0, function* () {
                 try {
                     // create three files (access.log, daily.log, and proofs.log) with names corresponding to the date
                     var date = new Date();
@@ -89,7 +59,7 @@ class koiLogs {
         });
     }
     generateMiddleware() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             console.log('logslocation', this.rawLogFileLocation);
             if (!this || !this.rawLogFileLocation || this.rawLogFileLocation === "")
                 yield this.generateLogFiles();
@@ -97,7 +67,7 @@ class koiLogs {
         });
     }
     koiLogsHelper(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             var logLocation = this.logFileLocation;
             console.log('entered koiLogsHelper at ', new Date(), !this, logLocation);
             if (logLocation === "")
@@ -114,7 +84,7 @@ class koiLogs {
         });
     }
     koiRawLogsHelper(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             var logLocation = this.rawLogFileLocation;
             console.log('entered koiRawLogsHelper at ', new Date(), !this, logLocation);
             if (logLocation === "")
@@ -130,11 +100,11 @@ class koiLogs {
         });
     }
     koiLogsDailyTask() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const _this = this;
             _this.logsTask();
             return node_cron_1.default.schedule('0 0 0 * * *', function () {
-                return __awaiter(this, void 0, void 0, function* () {
+                return tslib_1.__awaiter(this, void 0, void 0, function* () {
                     console.log('running the log cleanup task once per day on ', new Date());
                     let result = yield _this.logsTask();
                     console.log('daily log task returned ', result);
@@ -143,8 +113,8 @@ class koiLogs {
         });
     }
     logsTask() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => tslib_1.__awaiter(this, void 0, void 0, function* () {
                 try {
                     let masterSalt = getLogSalt();
                     // then get the raw logs
@@ -167,7 +137,7 @@ class koiLogs {
         removes the old access logs file
     */
     clearRawLogs() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 fs.truncate(this.rawLogFileLocation, 0, function () {
                     resolve(true);
@@ -180,7 +150,7 @@ class koiLogs {
         retrieves the raw logs and reads them into a json array
     */
     readRawLogs(masterSalt) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 let fullLogs = fs.readFileSync(this.rawLogFileLocation);
                 let logs = fullLogs.toString().split("\n");
@@ -214,7 +184,7 @@ class koiLogs {
         generates the daily log file (/logs/)
     */
     writeDailyLogs(logs) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 // generate the log payload
                 var data = {
@@ -224,7 +194,7 @@ class koiLogs {
                     signature: ''
                 };
                 // sign it 
-                data.signature = signLogs(data);
+                data.signature = signLogs();
                 for (var key in logs) {
                     var log = logs[key];
                     if (log && log.addresses) {
@@ -247,8 +217,8 @@ class koiLogs {
       generate the log files
     */
     createLogFile(name) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => tslib_1.__awaiter(this, void 0, void 0, function* () {
                 // resolve('/tmp/' + name as string)
                 if (this.fileDIR > '') {
                     var fileName = this.fileDIR + name;
@@ -287,8 +257,8 @@ function signLogs(data) {
     resolves to an array of data payloads
 */
 function sortAndFilterLogs(logs) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+    return tslib_1.__awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => tslib_1.__awaiter(this, void 0, void 0, function* () {
             var formatted_logs = [];
             try {
                 for (var log of logs) {
@@ -313,7 +283,7 @@ function sortAndFilterLogs(logs) {
     });
 }
 function writeEmptyFile(location) {
-    return __awaiter(this, void 0, void 0, function* () {
+    return tslib_1.__awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
             fs.writeFile(location, "", {}, function (err) {
                 if (err) {
@@ -330,4 +300,3 @@ function writeEmptyFile(location) {
 function getLogSalt() {
     return js_sha256_1.sha256(cryptoRandomString({ length: 10 }));
 }
-//# sourceMappingURL=index.js.map

@@ -6,11 +6,12 @@ export default class koiLogs {
     proofFileLocation: string;
     fileDIR: any;
     node_id: string;
-    middleware: object;
+    middleware: any;
     private generateLogFiles;
-    koiLogsHelper(req: Request, res: Response): Promise<any>;
-    koiRawLogsHelper(req: Request, res: Response): Promise<any>;
-    private koiLogsDailyTask;
+    generateMiddleware(): Promise<any>;
+    koiLogsHelper(req: Request, res: Response): Promise<void>;
+    koiRawLogsHelper(req: Request, res: Response): Promise<void>;
+    koiLogsDailyTask(): Promise<any>;
     private logsTask;
     private clearRawLogs;
     private readRawLogs;

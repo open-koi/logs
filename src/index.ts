@@ -18,10 +18,14 @@ export default class koiLogs{
     }
     this.logFileLocation = "";
     this.rawLogFileLocation = "";
-    this.middleware = generateKoiMiddleware(this.rawLogFileLocation);
+    var _this = this;
+    // this.middleware = function () {
+    //   return this.generateKoiMiddleware(_this.rawLogFileLocation);
+    // }
     this.proofFileLocation = "";
     this.generateLogFiles()
     this.node_id = getLogSalt()
+    
   }
 
   logFileLocation: string;
@@ -29,7 +33,7 @@ export default class koiLogs{
   proofFileLocation: string;
   fileDIR: any;
   node_id: string;
-  middleware: object;
+  middleware: any;
 
   private async generateLogFiles(): Promise<any> {
     return new Promise(async (resolve, reject) => {
@@ -64,8 +68,6 @@ export default class koiLogs{
 
         this.rawLogFileLocation = paths[1]
 
-        this.middleware = generateKoiMiddleware(this.rawLogFileLocation)
-
         this.proofFileLocation = paths[2]
 
         // return their file names to the caller
@@ -77,8 +79,32 @@ export default class koiLogs{
     })
   }
 
-  public async koiLogsHelper(req: Request, res: Response): Promise<any> {
-    fs.readFile(this.logFileLocation, 'utf8', (err: any, data: any) => {
+  async generateMiddleware(): Promise<any> {
+    console.log('logslocation', this.rawLogFileLocation)
+    if (!this || !this.rawLogFileLocation || this.rawLogFileLocation === "")  await this.generateLogFiles()
+    return generateKoiMiddleware(this.rawLogFileLocation)
+  }
+
+  async koiLogsHelper(req: Request, res: Response) {
+    var logLocation = this.logFileLocation as string;
+    console.log('entered koiLogsHelper at ', new Date(), !this, logLocation)
+    if ( logLocation === "" )  await this.generateLogFiles()
+    fs.readFile(logLocation, 'utf8', (err: any, data: any) => {
+      if (err) {
+        console.error(err)
+        console.log('sent err ', err, new Date());
+        return res.status(500).send(err);
+      }
+      console.log('sent data ', data, new Date());
+      return res.status(200).send(data);
+    })
+  }
+
+  async koiRawLogsHelper(req: Request, res: Response) {
+    var logLocation = this.rawLogFileLocation as string;
+    console.log('entered koiRawLogsHelper at ', new Date(), !this, logLocation)
+    if ( logLocation === "" )  await this.generateLogFiles()
+    fs.readFile(logLocation, 'utf8', (err: any, data: any) => {
       if (err) {
         console.error(err)
         res.status(500).send(err);
@@ -88,20 +114,10 @@ export default class koiLogs{
     })
   }
 
-  public async koiRawLogsHelper(req: Request, res: Response): Promise<any> {
-    fs.readFile(this.rawLogFileLocation, 'utf8', (err: any, data: any) => {
-      if (err) {
-        console.error(err)
-        res.status(500).send(err);
-        return
-      }
-      res.status(200).send(data);
-    })
-  }
-
-  private async koiLogsDailyTask(): Promise<any> {
+  async koiLogsDailyTask(): Promise<any> {
     const _this = this;
-    return cron.schedule('0 0 * * *', async function () {
+    _this.logsTask()
+    return cron.schedule('0 0 0 * * *', async function () {
       console.log('running the log cleanup task once per day on ', new Date());
       let result = await _this.logsTask()
       console.log('daily log task returned ', result)
