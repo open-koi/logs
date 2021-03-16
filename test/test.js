@@ -1,13 +1,16 @@
 const Express = require('express');
-const { joinKoi, koiLogsHelper, koiRawLogsHelper, generateKoiMiddleware } = require('../dist/index.js');
+const koiLogs = require('../dist/index.js');
 
-var app = new Express ();
+const app = new Express ();
 
 startServer()
 
 // add koi tasks
 async function startServer ( ) {
-  await joinKoi(app, "/home/al/");
+  var koiLogger = new koiLogs ("/home/al/");
+  app.use(koiLogger.middleware);
+  app.get("/logs/", koiLogger.koiLogsHelper);
+  app.get("/logs/raw/", koiLogger.koiRawLogsHelper);
 
   // start the server listener
   app.listen(process.env.PORT || 3000, () => {

@@ -1,272 +1,240 @@
 import * as fs from 'fs';
 import { Request, Response } from 'express';
-import path from 'path';
 import { sha256 } from 'js-sha256';
 import cryptoRandomString = require("crypto-random-string")
 import cron from 'node-cron';
-import { generateKoiMiddleware } from './middleware';
 import tmp from 'tmp';
-import { sign } from 'node:crypto';
+import e = require('express');
+import { generateKoiMiddleware } from './middleware';
+import {
+  RawLogs,
+  FormattedLogsArray
+} from './types';
 
-// these will be populated when the library is instantiated
-var logFileLocation: string;
-var rawLogFileLocation: string;
-var proofFileLocation: string;
-var node_id: string; // this will be used to deduplicate logs between gateway nodes
-var fileDIR: string; // the desired log file directory (if the tmp module is not an option, i.e. docker containers)
-
-function setDefaults() {
-  logFileLocation = "";
-  rawLogFileLocation = "";
-  proofFileLocation = "";
-}
-
-interface ExpressApp {
-  use: Function,
-  get: Function
-}
-
-interface RawLogs {
-  address: string,
-  user: string,
-  date: string,
-  method: string,
-  uniqueId: string,
-  url: string,
-  ref: string,
-}
-
-interface FormattedLogs {
-  addresses: string[],
-  url: string
-}
-
-interface FormattedLogsArray extends Array<FormattedLogs> {
-  [key: string]: any
-}
-
-function getLogSalt() {
-
-  return sha256(cryptoRandomString({ length: 10 }))
-
-}
-
-export const joinKoi = async function (app: ExpressApp, path?: string) {
-  if (path) {
-    fileDIR = path;
+export default class koiLogs{
+  constructor(path: string) {
+    if (path) {
+      this.fileDIR = path;
+    }
+    this.logFileLocation = "";
+    this.rawLogFileLocation = "";
+    this.middleware = generateKoiMiddleware(this.rawLogFileLocation);
+    this.proofFileLocation = "";
+    this.generateLogFiles()
+    this.node_id = getLogSalt()
   }
-  setDefaults()
-  await generateLogFiles()
-  node_id = await getLogSalt()
-  const koiMiddleware = await generateKoiMiddleware(rawLogFileLocation)
-  app.use(koiMiddleware);
-  app.get("/logs/", koiLogsHelper);
-  app.get("/logs/raw/", koiRawLogsHelper);
-  koiLogsDailyTask() // start the daily log task
-  return app;
-}
 
-export const koiLogsHelper = function (req: Request, res: Response) {
-  // console.log('logs file path is ', logFileLocation)
-  fs.readFile(logFileLocation, 'utf8', (err: any, data: any) => {
-    if (err) {
-      console.error(err)
-      res.status(500).send(err);
-      return
-    }
-    // console.log(data)
-    res.status(200).send(data);
-  })
-}
+  logFileLocation: string;
+  rawLogFileLocation: string;
+  proofFileLocation: string;
+  fileDIR: any;
+  node_id: string;
+  middleware: object;
 
-export const koiRawLogsHelper = function (req: Request, res: Response) {
-  // console.log('logs file path is ', logFileLocation)
-  fs.readFile(rawLogFileLocation, 'utf8', (err: any, data: any) => {
-    if (err) {
-      console.error(err)
-      res.status(500).send(err);
-      return
-    }
-    // console.log(data)
-    res.status(200).send(data);
-  })
-}
-
-export const koiLogsDailyTask = function () {
-  return cron.schedule('0 0 * * *', async function () {
-    console.log('running the log cleanup task once per day on ', new Date());
-    let result = await logsTask()
-    console.log('daily log task returned ', result)
-  });
-}
-
-export const logsTask = async function () {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let masterSalt = getLogSalt()
-
-      // then get the raw logs
-      let rawLogs = await readRawLogs(masterSalt) as RawLogs[];
-
-      let sorted = await sortAndFilterLogs(rawLogs) as FormattedLogsArray;
-
-      let result = await writeDailyLogs(sorted);
-
-      // last, clear old logs
-      await clearRawLogs();
-
-      resolve(result)
-
-    } catch (err) {
-      console.error('error writing daily log file', err)
-      reject(err)
-    }
-  })
-}
-
-/*
-  @readRawLogs
-    retrieves the raw logs and reads them into a json array
-*/
-async function readRawLogs(masterSalt: string) {
-  return new Promise((resolve, reject) => {
-    let fullLogs = fs.readFileSync(rawLogFileLocation);
-    let logs = fullLogs.toString().split("\n");
-    var prettyLogs = [] as RawLogs[];
-    for (var log of logs) {
+  private async generateLogFiles(): Promise<any> {
+    return new Promise(async (resolve, reject) => {
       try {
-        if (log && !(log === " ") && !(log === "")) {
+        // create three files (access.log, daily.log, and proofs.log) with names corresponding to the date
+        var date = new Date();
+        var names = [
+          date.toISOString().slice(0, 10) + '-daily.log',
+          date.toISOString().slice(0, 10) + '-access.log',
+          date.toISOString().slice(0, 10) + '-proofs.log',
+        ]
+
+        let paths: (string)[] = []
+        for (var name of names) {
           try {
-            var logJSON = JSON.parse(log) as RawLogs;
-            logJSON.uniqueId = sha256(logJSON.url)
-            logJSON.address = sha256.hmac(masterSalt, logJSON.address)
-            prettyLogs.push(logJSON)
+
+            var path = await this.createLogFile(name) as string;
+            
+            paths.push(path)
+
+
           } catch (err) {
-            console.error('error reading json in Koi log middleware', err)
             reject(err)
           }
-        } 
+        }
+
+        console.log('created paths', paths, paths[0])
+
+        // set the log file names in global vars
+        // sloppy, needs to move to cleaner OOP
+        this.logFileLocation = paths[0]
+
+        this.rawLogFileLocation = paths[1]
+
+        this.middleware = generateKoiMiddleware(this.rawLogFileLocation)
+
+        this.proofFileLocation = paths[2]
+
+        // return their file names to the caller
+        resolve(paths)
+
       } catch (err) {
-        console.error('err', err)
         reject(err)
       }
-    }
-    resolve(prettyLogs)
-  })
-}
+    })
+  }
 
-/*
-  @writeDailyLogs
-    generates the daily log file (/logs/)
-*/
-async function writeDailyLogs(logs: FormattedLogsArray) {
-  return new Promise((resolve, reject) => {
-    // generate the log payload
-    var data = {
-      gateway: node_id,
-      lastUpdate: new Date(),
-      summary: new Array(),
-      signature: ''
-    }
-    // sign it 
-    data.signature = signLogs(data)
-    for (var key in logs) {
-      var log = logs[key]
-      if (log && log.addresses) {
-        data.summary.push(log)
-      }
-    }
-    fs.writeFile(logFileLocation, JSON.stringify(data), {}, function (err) {
+  public async koiLogsHelper(req: Request, res: Response): Promise<any> {
+    fs.readFile(this.logFileLocation, 'utf8', (err: any, data: any) => {
       if (err) {
-        console.log('ERROR SAVING ACCESS LOG', err)
-        resolve({ success: false, logs: data, error: err })
-      } else {
-        resolve({ success: true, logs: data })
+        console.error(err)
+        res.status(500).send(err);
+        return
       }
-    });
-  })
-}
+      res.status(200).send(data);
+    })
+  }
 
-async function writeEmptyFile(location: string) {
-  return new Promise((resolve, reject) => {
-    fs.writeFile(location, "", {}, function (err) {
+  public async koiRawLogsHelper(req: Request, res: Response): Promise<any> {
+    fs.readFile(this.rawLogFileLocation, 'utf8', (err: any, data: any) => {
       if (err) {
-        console.log('ERROR CREATING ACCESS LOG at' + location, err)
-        resolve({ success: false, error: err })
-      } else {
-        resolve({ success: true })
+        console.error(err)
+        res.status(500).send(err);
+        return
       }
+      res.status(200).send(data);
+    })
+  }
+
+  private async koiLogsDailyTask(): Promise<any> {
+    const _this = this;
+    return cron.schedule('0 0 * * *', async function () {
+      console.log('running the log cleanup task once per day on ', new Date());
+      let result = await _this.logsTask()
+      console.log('daily log task returned ', result)
     });
-  });
-}
+  }
 
-async function generateLogFiles() {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // create three files (access.log, daily.log, and proofs.log) with names corresponding to the date
-      var date = new Date();
-      var names = [
-        date.toISOString().slice(0, 10) + '-daily.log',
-        date.toISOString().slice(0, 10) + '-access.log',
-        date.toISOString().slice(0, 10) + '-proofs.log',
-      ]
+  private async logsTask(): Promise<any> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        let masterSalt = getLogSalt()
 
-      let paths: (string)[] = []
-      for (var name of names) {
+        // then get the raw logs
+        let rawLogs = await this.readRawLogs(masterSalt) as RawLogs[];
+
+        let sorted = await sortAndFilterLogs(rawLogs) as FormattedLogsArray;
+
+        let result = await this.writeDailyLogs(sorted);
+
+        // last, clear old logs
+        await this.clearRawLogs();
+
+        resolve(result)
+
+      } catch (err) {
+        console.error('error writing daily log file', err)
+        reject(err)
+      }
+    })
+  }
+
+  /*
+    @clearRawLogs
+      removes the old access logs file
+  */
+  private async clearRawLogs(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      fs.truncate(this.rawLogFileLocation, 0, function () {
+        resolve(true)
+      });
+    });
+  }
+
+  /*
+    @readRawLogs
+      retrieves the raw logs and reads them into a json array
+  */
+  private async readRawLogs(masterSalt: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      let fullLogs = fs.readFileSync(this.rawLogFileLocation);
+      let logs = fullLogs.toString().split("\n");
+      var prettyLogs = [] as RawLogs[];
+      for (var log of logs) {
         try {
-
-          var path = await createLogFile(name) as string;
-          
-          paths.push(path)
-
-
+          if (log && !(log === " ") && !(log === "")) {
+            try {
+              var logJSON = JSON.parse(log) as RawLogs;
+              logJSON.uniqueId = sha256(logJSON.url)
+              logJSON.address = sha256.hmac(masterSalt, logJSON.address)
+              prettyLogs.push(logJSON)
+            } catch (err) {
+              console.error('error reading json in Koi log middleware', err)
+              reject(err)
+            }
+          }
         } catch (err) {
+          console.error('err', err)
           reject(err)
         }
       }
+      resolve(prettyLogs)
+    })
+  }
 
-      console.log('created paths', paths, paths[0])
-
-      // set the log file names in global vars
-      // sloppy, needs to move to cleaner OOP
-      logFileLocation = paths[0]
-      rawLogFileLocation = paths[1]
-      proofFileLocation = paths[2]
-
-      // return their file names to the caller
-      resolve(paths)
-
-    } catch (err) {
-      reject(err)
-    }
-  })
-}
-
-/*
-  generate the log files
-*/
-async function createLogFile(name: string) {
-  return new Promise(async (resolve, reject) => {
-    // resolve('/tmp/' + name as string)
-    if (fileDIR > '') {
-      var fileName = fileDIR + name;
-      try {
-        await writeEmptyFile(fileName)
-        resolve(fileName);
-      } catch (err) {
-        reject('error writing log file ' + fileName)
+  /*
+    @writeDailyLogs
+      generates the daily log file (/logs/)
+  */
+  private async writeDailyLogs(logs: FormattedLogsArray): Promise<any> {
+    return new Promise((resolve, reject) => {
+      // generate the log payload
+      var data = {
+        gateway: this.node_id,
+        lastUpdate: new Date(),
+        summary: new Array(),
+        signature: ''
       }
-    } else {
-      tmp.file(function _tempFileCreated(err, path:string, fd) {
-        if (err) reject(err);
-        console.log('fd', fd)
-        console.log('File: ', path);
-        resolve (path);
+      // sign it 
+      data.signature = signLogs(data)
+      for (var key in logs) {
+        var log = logs[key]
+        if (log && log.addresses) {
+          data.summary.push(log)
+        }
+      }
+      fs.writeFile(this.logFileLocation, JSON.stringify(data), {}, function (err) {
+        if (err) {
+          console.log('ERROR SAVING ACCESS LOG', err)
+          resolve({ success: false, logs: data, error: err })
+        } else {
+          resolve({ success: true, logs: data })
+        }
       });
-    }
-  });
+    })
+  }
+
+  /*
+    generate the log files
+  */
+  private async createLogFile(name: string): Promise<any> {
+    return new Promise(async (resolve, reject) => {
+      // resolve('/tmp/' + name as string)
+      if (this.fileDIR > '') {
+        var fileName = this.fileDIR + name;
+        try {
+          await writeEmptyFile(fileName)
+          resolve(fileName);
+        } catch (err) {
+          reject('error writing log file ' + fileName)
+        }
+      } else {
+        tmp.file(function _tempFileCreated(err, path: string, fd) {
+          if (err) reject(err);
+          console.log('fd', fd)
+          console.log('File: ', path);
+          resolve(path);
+        });
+      }
+    });
+  }
 }
 
+
+//////////////////////// Utility Functions //////////////////////////////
 /*
   generates and returns a signature for a koi logs payload
 */
@@ -304,14 +272,22 @@ async function sortAndFilterLogs(logs: RawLogs[]) {
 
 }
 
-/*
-  @clearRawLogs
-    removes the old access logs file
-*/
-async function clearRawLogs() {
+
+async function writeEmptyFile(location: string) {
   return new Promise((resolve, reject) => {
-    fs.truncate(rawLogFileLocation, 0, function () {
-      resolve(true)
+    fs.writeFile(location, "", {}, function (err) {
+      if (err) {
+        console.log('ERROR CREATING ACCESS LOG at' + location, err)
+        resolve({ success: false, error: err })
+      } else {
+        resolve({ success: true })
+      }
     });
   });
+}
+
+function getLogSalt() {
+
+  return sha256(cryptoRandomString({ length: 10 }))
+
 }

@@ -1,12 +1,19 @@
 import { Request, Response } from 'express';
-import cron from 'node-cron';
-interface ExpressApp {
-    use: Function;
-    get: Function;
+export default class koiLogs {
+    constructor(path: string);
+    logFileLocation: string;
+    rawLogFileLocation: string;
+    proofFileLocation: string;
+    fileDIR: any;
+    node_id: string;
+    middleware: object;
+    private generateLogFiles;
+    koiLogsHelper(req: Request, res: Response): Promise<any>;
+    koiRawLogsHelper(req: Request, res: Response): Promise<any>;
+    private koiLogsDailyTask;
+    private logsTask;
+    private clearRawLogs;
+    private readRawLogs;
+    private writeDailyLogs;
+    private createLogFile;
 }
-export declare const joinKoi: (app: ExpressApp, path?: string | undefined) => Promise<ExpressApp>;
-export declare const koiLogsHelper: (req: Request, res: Response) => void;
-export declare const koiRawLogsHelper: (req: Request, res: Response) => void;
-export declare const koiLogsDailyTask: () => cron.ScheduledTask;
-export declare const logsTask: () => Promise<unknown>;
-export {};
