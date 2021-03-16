@@ -62,9 +62,10 @@ const joinKoi = function (app, path) {
         node_id = yield getLogSalt();
         const koiMiddleware = yield middleware_1.generateKoiMiddleware(rawLogFileLocation);
         app.use(koiMiddleware);
-        // app.get("/logs/", koiLogsHelper);
-        // app.get("/logs/raw/", koiRawLogsHelper);
+        app.get("/logs/", exports.koiLogsHelper);
+        app.get("/logs/raw/", exports.koiRawLogsHelper);
         exports.koiLogsDailyTask(); // start the daily log task
+        return app;
     });
 };
 exports.joinKoi = joinKoi;
@@ -193,6 +194,21 @@ function writeDailyLogs(logs) {
         });
     });
 }
+function writeEmptyFile(location) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            fs.writeFile(location, "", {}, function (err) {
+                if (err) {
+                    console.log('ERROR CREATING ACCESS LOG at' + location, err);
+                    resolve({ success: false, error: err });
+                }
+                else {
+                    resolve({ success: true });
+                }
+            });
+        });
+    });
+}
 function generateLogFiles() {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
@@ -237,7 +253,14 @@ function createLogFile(name) {
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
             // resolve('/tmp/' + name as string)
             if (fileDIR > '') {
-                resolve(fileDIR + name);
+                var fileName = fileDIR + name;
+                try {
+                    yield writeEmptyFile(fileName);
+                    resolve(fileName);
+                }
+                catch (err) {
+                    reject('error writing log file ' + fileName);
+                }
             }
             else {
                 tmp_1.default.file(function _tempFileCreated(err, path, fd) {

@@ -60,9 +60,10 @@ export const joinKoi = async function (app: ExpressApp, path?: string) {
   node_id = await getLogSalt()
   const koiMiddleware = await generateKoiMiddleware(rawLogFileLocation)
   app.use(koiMiddleware);
-  // app.get("/logs/", koiLogsHelper);
-  // app.get("/logs/raw/", koiRawLogsHelper);
+  app.get("/logs/", koiLogsHelper);
+  app.get("/logs/raw/", koiRawLogsHelper);
   koiLogsDailyTask() // start the daily log task
+  return app;
 }
 
 export const koiLogsHelper = function (req: Request, res: Response) {
@@ -186,6 +187,19 @@ async function writeDailyLogs(logs: FormattedLogsArray) {
   })
 }
 
+async function writeEmptyFile(location: string) {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(location, "", {}, function (err) {
+      if (err) {
+        console.log('ERROR CREATING ACCESS LOG at' + location, err)
+        resolve({ success: false, error: err })
+      } else {
+        resolve({ success: true })
+      }
+    });
+  });
+}
+
 async function generateLogFiles() {
   return new Promise(async (resolve, reject) => {
     try {
@@ -202,7 +216,7 @@ async function generateLogFiles() {
         try {
 
           var path = await createLogFile(name) as string;
-
+          
           paths.push(path)
 
 
@@ -235,7 +249,13 @@ async function createLogFile(name: string) {
   return new Promise(async (resolve, reject) => {
     // resolve('/tmp/' + name as string)
     if (fileDIR > '') {
-      resolve (fileDIR + name);
+      var fileName = fileDIR + name;
+      try {
+        await writeEmptyFile(fileName)
+        resolve(fileName);
+      } catch (err) {
+        reject('error writing log file ' + fileName)
+      }
     } else {
       tmp.file(function _tempFileCreated(err, path:string, fd) {
         if (err) reject(err);
