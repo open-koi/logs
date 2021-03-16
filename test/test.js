@@ -7,7 +7,7 @@ startServer()
 
 // add koi tasks
 async function startServer ( ) {
-  app = await joinKoi(app, "/home/al/");
+  await joinKoi(app, "/home/al/");
 
   // start the server listener
   app.listen(process.env.PORT || 3000, () => {
