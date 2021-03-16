@@ -6,7 +6,9 @@ console.log('koilogs is', koiLogs)
 const app = new Express ();
 
 var koiLogger = new koiLogs ("/home/al/");
+
 connectKoi()
+
 async function connectKoi ( ) {
 
   var koiLoggerMiddleware = await koiLogger.generateMiddleware()
