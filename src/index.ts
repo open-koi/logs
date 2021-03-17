@@ -82,7 +82,8 @@ class koiLogs{
   async generateMiddleware(): Promise<any> {
     console.log('logslocation', this.rawLogFileLocation)
     if (!this || !this.rawLogFileLocation || this.rawLogFileLocation === "")  await this.generateLogFiles()
-    return generateKoiMiddleware(this.rawLogFileLocation)
+    if (!this.middleware) this.middleware = await generateKoiMiddleware(this.rawLogFileLocation)
+    return this.middleware
   }
 
   async koiLogsHelper(req: Request, res: Response) {
@@ -91,7 +92,7 @@ class koiLogs{
     if ( logLocation === "" )  await this.generateLogFiles()
     fs.readFile(logLocation, 'utf8', (err: any, data: any) => {
       if (err) {
-        console.error(err)
+        console.log("ERROR in Koi Logs Helper", err)
         console.log('sent err ', err, new Date());
         return res.status(500).send(err);
       }
@@ -106,11 +107,11 @@ class koiLogs{
     if ( logLocation === "" )  await this.generateLogFiles()
     fs.readFile(logLocation, 'utf8', (err: any, data: any) => {
       if (err) {
-        console.error(err)
-        res.status(500).send(err);
+        console.log("ERROR in Koi Raw Logs Helper", err)
+        res.status(500).send(err)
         return
       }
-      res.status(200).send(data);
+      res.status(200).send(data)
     })
   }
 
@@ -142,7 +143,7 @@ class koiLogs{
         resolve(result)
 
       } catch (err) {
-        console.error('error writing daily log file', err)
+        console.log('error writing daily koi log file', err)
         reject(err)
       }
     })
@@ -178,12 +179,12 @@ class koiLogs{
               logJSON.address = sha256.hmac(masterSalt, logJSON.address)
               prettyLogs.push(logJSON)
             } catch (err) {
-              console.error('error reading json in Koi log middleware', err)
+              console.log('error reading json in Koi log middleware', err)
               reject(err)
             }
           }
         } catch (err) {
-          console.error('err', err)
+          console.log('err', err)
           reject(err)
         }
       }
