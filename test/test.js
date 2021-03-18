@@ -1,28 +1,22 @@
-const Express = require('express');
-const koiLogs = require('../dist/index.js');
+var express = require('express');
+var koiLogs = require("../dist/index.js");
 
-console.log('koilogs is', koiLogs)
+var koiLogger = new koiLogs();
 
-const app = new Express ();
+var app = new express();
 
-var koiLogger = new koiLogs ("/home/al/");
+app.get("/logs/", async function (req, res) {
+  return await koiLogger.koiLogsHelper(req, res)
+});
+app.get("/logs/raw/", async function(req, res) { 
+  return await koiLogger.koiRawLogsHelper(req, res)
+});
 
-connectKoi()
+app.use(koiLogger.logger);
 
-async function connectKoi ( ) {
-
-  var koiLoggerMiddleware = await koiLogger.generateMiddleware()
-  console.log('created koi middleware', koiLoggerMiddleware)
-  app.use(koiLoggerMiddleware);
-  app.get("/logs/", async function(req, res) {
-    return await koiLogger.koiLogsHelper(req, res)
-  });
-  app.get("/logs/raw/", async function(req, res) { 
-    return await koiLogger.koiRawLogsHelper(req, res)
-  });
-  koiLogger.koiLogsDailyTask()
-  
-}
+app.get("/info/", async function (req, res) {
+  return res.status(200).send("<html><i>Welcome to the fish pond.</i><html>");
+})
 
 // start the server listener
 app.listen(process.env.PORT || 3000, () => {

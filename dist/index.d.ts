@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 declare class koiLogs {
     constructor(path: string);
     logFileLocation: string;
@@ -8,7 +8,7 @@ declare class koiLogs {
     node_id: string;
     middleware: any;
     private generateLogFiles;
-    generateMiddleware(): Promise<any>;
+    logger: RequestHandler;
     koiLogsHelper(req: Request, res: Response): Promise<void>;
     koiRawLogsHelper(req: Request, res: Response): Promise<void>;
     koiLogsDailyTask(): Promise<any>;

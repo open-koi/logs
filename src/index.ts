@@ -1,11 +1,10 @@
 import * as fs from 'fs';
-import { Request, Response } from 'express';
+import { Request, Response, RequestHandler, NextFunction } from 'express';
 import { sha256 } from 'js-sha256';
 import cryptoRandomString = require("crypto-random-string")
 import cron from 'node-cron';
 import tmp from 'tmp';
 import e = require('express');
-import { generateKoiMiddleware } from './middleware';
 import {
   RawLogs,
   FormattedLogsArray
@@ -19,9 +18,6 @@ class koiLogs{
     this.logFileLocation = "";
     this.rawLogFileLocation = "";
     var _this = this;
-    // this.middleware = function () {
-    //   return this.generateKoiMiddleware(_this.rawLogFileLocation);
-    // }
     this.proofFileLocation = "";
     this.generateLogFiles()
     this.node_id = getLogSalt()
@@ -78,12 +74,22 @@ class koiLogs{
       }
     })
   }
-
-  async generateMiddleware(): Promise<any> {
-    console.log('logslocation', this.rawLogFileLocation)
-    if (!this || !this.rawLogFileLocation || this.rawLogFileLocation === "")  await this.generateLogFiles()
-    if (!this.middleware) this.middleware = await generateKoiMiddleware(this.rawLogFileLocation)
-    return this.middleware
+  
+  public logger: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
+    if (!this.rawLogFileLocation) {
+      await this.rawLogFileLocation
+    }
+    var payload = {
+      "address": req.ip,
+      "date": new Date(),
+      "method": req.method,
+      "url": req.path,
+      "type": req.protocol
+    };
+    fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + ",", function (err) {
+      if (err) throw err;
+    });
+    return next()
   }
 
   async koiLogsHelper(req: Request, res: Response) {
@@ -92,7 +98,7 @@ class koiLogs{
     if ( logLocation === "" )  await this.generateLogFiles()
     fs.readFile(logLocation, 'utf8', (err: any, data: any) => {
       if (err) {
-        console.log("ERROR in Koi Logs Helper", err)
+        console.error(err)
         console.log('sent err ', err, new Date());
         return res.status(500).send(err);
       }
@@ -107,11 +113,11 @@ class koiLogs{
     if ( logLocation === "" )  await this.generateLogFiles()
     fs.readFile(logLocation, 'utf8', (err: any, data: any) => {
       if (err) {
-        console.log("ERROR in Koi Raw Logs Helper", err)
-        res.status(500).send(err)
+        console.error(err)
+        res.status(500).send(err);
         return
       }
-      res.status(200).send(data)
+      res.status(200).send(data);
     })
   }
 
@@ -143,7 +149,7 @@ class koiLogs{
         resolve(result)
 
       } catch (err) {
-        console.log('error writing daily koi log file', err)
+        console.error('error writing daily log file', err)
         reject(err)
       }
     })
@@ -179,12 +185,12 @@ class koiLogs{
               logJSON.address = sha256.hmac(masterSalt, logJSON.address)
               prettyLogs.push(logJSON)
             } catch (err) {
-              console.log('error reading json in Koi log middleware', err)
+              console.error('error reading json in Koi log middleware', err)
               reject(err)
             }
           }
         } catch (err) {
-          console.log('err', err)
+          console.error('err', err)
           reject(err)
         }
       }
@@ -272,7 +278,7 @@ async function sortAndFilterLogs(logs: RawLogs[]) {
     try {
       for (var log of logs) {
         if (log.url && log.uniqueId) {
-          if (formatted_logs[log.uniqueId] && !formatted_logs[log.uniqueId].addresses.includes(log.address)) {
+          if (formatted_logs[log.uniqueId] && !formatted_logs[log.uniqueId].         addresses.includes(log.address)) {
             formatted_logs[log.uniqueId].addresses.push(log.address)
           } else {
             formatted_logs[log.uniqueId] = {

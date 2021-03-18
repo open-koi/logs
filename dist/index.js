@@ -35,18 +35,31 @@ const js_sha256_1 = require("js-sha256");
 const cryptoRandomString = require("crypto-random-string");
 const node_cron_1 = __importDefault(require("node-cron"));
 const tmp_1 = __importDefault(require("tmp"));
-const middleware_1 = require("./middleware");
 class koiLogs {
     constructor(path) {
+        this.logger = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            if (!this.rawLogFileLocation) {
+                yield this.rawLogFileLocation;
+            }
+            var payload = {
+                "address": req.ip,
+                "date": new Date(),
+                "method": req.method,
+                "url": req.path,
+                "type": req.protocol
+            };
+            fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + ",", function (err) {
+                if (err)
+                    throw err;
+            });
+            return next();
+        });
         if (path) {
             this.fileDIR = path;
         }
         this.logFileLocation = "";
         this.rawLogFileLocation = "";
         var _this = this;
-        // this.middleware = function () {
-        //   return this.generateKoiMiddleware(_this.rawLogFileLocation);
-        // }
         this.proofFileLocation = "";
         this.generateLogFiles();
         this.node_id = getLogSalt();
@@ -85,14 +98,6 @@ class koiLogs {
                     reject(err);
                 }
             }));
-        });
-    }
-    generateMiddleware() {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('logslocation', this.rawLogFileLocation);
-            if (!this || !this.rawLogFileLocation || this.rawLogFileLocation === "")
-                yield this.generateLogFiles();
-            return middleware_1.generateKoiMiddleware(this.rawLogFileLocation);
         });
     }
     koiLogsHelper(req, res) {

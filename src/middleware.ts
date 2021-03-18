@@ -24,3 +24,4 @@ export async function generateKoiMiddleware (logFileLocation: string) {
     
   })
 }
+
