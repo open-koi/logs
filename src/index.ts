@@ -94,7 +94,7 @@ class koiLogs{
 
   async koiLogsHelper(req: Request, res: Response) {
     var logLocation = this.logFileLocation as string;
-    console.log('entered koiLogsHelper at ', new Date(), !this, logLocation)
+    // console.log('entered koiLogsHelper at ', new Date(), !this, logLocation)
     if ( logLocation === "" )  await this.generateLogFiles()
     fs.readFile(logLocation, 'utf8', (err: any, data: any) => {
       if (err) {
@@ -109,7 +109,7 @@ class koiLogs{
 
   async koiRawLogsHelper(req: Request, res: Response) {
     var logLocation = this.rawLogFileLocation as string;
-    console.log('entered koiRawLogsHelper at ', new Date(), !this, logLocation)
+    // console.log('entered koiRawLogsHelper at ', new Date(), !this, logLocation)
     if ( logLocation === "" )  await this.generateLogFiles()
     fs.readFile(logLocation, 'utf8', (err: any, data: any) => {
       if (err) {
@@ -125,9 +125,9 @@ class koiLogs{
     const _this = this;
     _this.logsTask()
     return cron.schedule('0 0 0 * * *', async function () {
-      console.log('running the log cleanup task once per day on ', new Date());
+      // console.log('running the log cleanup task once per day on ', new Date());
       let result = await _this.logsTask()
-      console.log('daily log task returned ', result)
+      // console.log('daily log task returned ', result)
     });
   }
 
@@ -149,7 +149,7 @@ class koiLogs{
         resolve(result)
 
       } catch (err) {
-        console.error('error writing daily log file', err)
+        // console.error('error writing daily log file', err)
         reject(err)
       }
     })
@@ -247,8 +247,8 @@ class koiLogs{
       } else {
         tmp.file(function _tempFileCreated(err, path: string, fd) {
           if (err) reject(err);
-          console.log('fd', fd)
-          console.log('File: ', path);
+          // console.log('fd', fd)
+          // console.log('File: ', path);
           resolve(path);
         });
       }
