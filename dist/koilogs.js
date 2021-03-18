@@ -19,7 +19,7 @@ class koiLogs {
                 "url": req.path,
                 "type": req.protocol
             };
-            fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + ",", function (err) {
+            fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + "\r\n", function (err) {
                 if (err)
                     throw err;
             });
@@ -61,6 +61,7 @@ class koiLogs {
                     this.logFileLocation = paths[0];
                     this.rawLogFileLocation = paths[1];
                     this.proofFileLocation = paths[2];
+                    this.koiLogsDailyTask();
                     // return their file names to the caller
                     resolve(paths);
                 }
@@ -73,7 +74,7 @@ class koiLogs {
     koiLogsHelper(req, res) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             var logLocation = this.logFileLocation;
-            console.log('entered koiLogsHelper at ', new Date(), !this, logLocation);
+            // console.log('entered koiLogsHelper at ', new Date(), !this, logLocation)
             if (logLocation === "")
                 yield this.generateLogFiles();
             fs.readFile(logLocation, 'utf8', (err, data) => {
@@ -90,7 +91,7 @@ class koiLogs {
     koiRawLogsHelper(req, res) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             var logLocation = this.rawLogFileLocation;
-            console.log('entered koiRawLogsHelper at ', new Date(), !this, logLocation);
+            // console.log('entered koiRawLogsHelper at ', new Date(), !this, logLocation)
             if (logLocation === "")
                 yield this.generateLogFiles();
             fs.readFile(logLocation, 'utf8', (err, data) => {
@@ -109,9 +110,9 @@ class koiLogs {
             _this.logsTask();
             return node_cron_1.default.schedule('0 0 0 * * *', function () {
                 return tslib_1.__awaiter(this, void 0, void 0, function* () {
-                    console.log('running the log cleanup task once per day on ', new Date());
-                    let result = yield _this.logsTask();
-                    console.log('daily log task returned ', result);
+                    // console.log('running the log cleanup task once per day on ', new Date());
+                    yield _this.logsTask();
+                    // console.log('daily log task returned ', result)
                 });
             });
         });
@@ -130,7 +131,7 @@ class koiLogs {
                     resolve(result);
                 }
                 catch (err) {
-                    console.error('error writing daily log file', err);
+                    // console.error('error writing daily log file', err)
                     reject(err);
                 }
             }));
@@ -157,7 +158,7 @@ class koiLogs {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 let fullLogs = fs.readFileSync(this.rawLogFileLocation);
-                let logs = fullLogs.toString().split("\n");
+                let logs = fullLogs.toString().split("\r\n");
                 var prettyLogs = [];
                 for (var log of logs) {
                     try {
@@ -238,8 +239,8 @@ class koiLogs {
                     tmp_1.default.file(function _tempFileCreated(err, path, fd) {
                         if (err)
                             reject(err);
-                        console.log('fd', fd);
-                        console.log('File: ', path);
+                        // console.log('fd', fd)
+                        // console.log('File: ', path);
                         resolve(path);
                     });
                 }

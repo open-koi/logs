@@ -65,7 +65,7 @@ class koiLogs{
         this.rawLogFileLocation = paths[1]
 
         this.proofFileLocation = paths[2]
-
+        this.koiLogsDailyTask()
         // return their file names to the caller
         resolve(paths)
 
@@ -86,7 +86,7 @@ class koiLogs{
       "url": req.path,
       "type": req.protocol
     };
-    fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + ",", function (err) {
+    fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + "\r\n", function (err) {
       if (err) throw err;
     });
     return next()
@@ -174,7 +174,7 @@ class koiLogs{
   private async readRawLogs(masterSalt: string): Promise<any> {
     return new Promise((resolve, reject) => {
       let fullLogs = fs.readFileSync(this.rawLogFileLocation);
-      let logs = fullLogs.toString().split("\n");
+      let logs = fullLogs.toString().split("\r\n");
       var prettyLogs = [] as RawLogs[];
       for (var log of logs) {
         try {
