@@ -13,7 +13,7 @@ import {
 } from './types';
 
 const cronstring = '0 0 0 * * *';
-const version = '1.0.2';
+const version = '1.0.3';
 
 class koiLogs{
   constructor(path: string) {
@@ -230,7 +230,8 @@ class koiLogs{
         gateway: this.node_id,
         lastUpdate: new Date(),
         summary: new Array(),
-        signature: ''
+        signature: '',
+        version: version
       }
       // sign it 
       data.signature = signLogs(data)
