@@ -7,7 +7,7 @@ const cryptoRandomString = require("crypto-random-string");
 const node_cron_1 = tslib_1.__importDefault(require("node-cron"));
 const tmp_1 = tslib_1.__importDefault(require("tmp"));
 const cronstring = '0 0 0 * * *';
-const version = '1.0.2';
+const version = '1.0.3';
 class koiLogs {
     constructor(path) {
         this.logger = (req, res, next) => tslib_1.__awaiter(this, void 0, void 0, function* () {
@@ -216,7 +216,8 @@ class koiLogs {
                     gateway: this.node_id,
                     lastUpdate: new Date(),
                     summary: new Array(),
-                    signature: ''
+                    signature: '',
+                    version: version
                 };
                 // sign it 
                 data.signature = signLogs();
