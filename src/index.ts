@@ -7,10 +7,14 @@ import tmp from 'tmp';
 // import koi from 'koi_tools';
 // TODO - fix wallet generation and signing using a seed phrase tmp wallet
 import e = require('express');
+const { koi_tools } = require("koi_tools");
+const WALLET_PATH = "../arweave-key-50JVvg84zA2ae-lQ7j9tL_CIXFlNXr2FXjEcDNXfTkc.json";
+const koi = new koi_tools();
 import {
   RawLogs,
   FormattedLogsArray
 } from './types';
+import { raw } from 'express';
 
 const cronstring = '0 0 0 * * *';
 const version = '1.0.3';
@@ -90,11 +94,26 @@ class koiLogs{
       "url": req.path,
       "type": req.protocol,
       "proof": {
-        "signature" : req.headers['X-Request-Signature'],
-        "public_key": req.headers['Request-Public-Key'],
+        "signature" : req.headers['x-request-signature'],
+        "public_key": req.headers['request-public-key'],
         "network": req.headers['Network-Type']
       }
     }
+    console.log(payload)
+    const wallet = await koi.loadWallet(WALLET_PATH);
+    //eslint-disable-next-line no-unused-vars
+    const address = await koi.getWalletAddress();
+    let verificationProof = JSON.parse(payload.proof.signature)
+    let valid = koi.verifySignature({
+      verificationProof
+    });
+    if(!valid){
+      console.log("Signature verification failed")
+      return next()
+    }
+
+
+    console.log(this.rawLogFileLocation)
     fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + "\r\n", function (err) {
       if (err) throw err;
     });

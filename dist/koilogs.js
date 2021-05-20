@@ -21,11 +21,13 @@ class koiLogs {
                 "url": req.path,
                 "type": req.protocol,
                 "proof": {
-                    "signature": req.headers['X-Request-Signature'],
-                    "public_key": req.headers['Request-Public-Key'],
+                    "signature": req.headers['x-request-signature'],
+                    "public_key": req.headers['request-public-key'],
                     "network": req.headers['Network-Type']
                 }
             };
+            console.log(payload);
+            console.log(this.rawLogFileLocation);
             fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + "\r\n", function (err) {
                 if (err)
                     throw err;
