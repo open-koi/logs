@@ -7,9 +7,10 @@ import tmp from 'tmp';
 // import koi from 'koi_tools';
 // TODO - fix wallet generation and signing using a seed phrase tmp wallet
 import e = require('express');
-const { koi_tools } = require("koi_tools");
+// const { koi_tools } = require("koi_tools");
+const koi_utils  = require("@_koi/sdk/utils");
 const WALLET_PATH = "../arweave-key-50JVvg84zA2ae-lQ7j9tL_CIXFlNXr2FXjEcDNXfTkc.json";
-const koi = new koi_tools();
+// const koi = new koi_tools();
 import {
   RawLogs,
   FormattedLogsArray
@@ -99,17 +100,13 @@ class koiLogs{
         "network": req.headers['Network-Type']
       }
     }
-    console.log(payload)
-    const wallet = await koi.loadWallet(WALLET_PATH);
-    //eslint-disable-next-line no-unused-vars
-    const address = await koi.getWalletAddress();
-    let verificationProof = JSON.parse(payload.proof.signature)
-    let valid = koi.verifySignature({
-      verificationProof
-    });
+    let verificationProof = JSON.parse(payload.proof.signature+"")
+    let valid = await koi_utils.KoiUtils.verifySignature(verificationProof)
     if(!valid){
       console.log("Signature verification failed")
       return next()
+    }else {
+      console.log("signature verification successful")
     }
 
 

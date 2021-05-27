@@ -35,6 +35,9 @@ const js_sha256_1 = require("js-sha256");
 const cryptoRandomString = require("crypto-random-string");
 const node_cron_1 = __importDefault(require("node-cron"));
 const tmp_1 = __importDefault(require("tmp"));
+// const { koi_tools } = require("koi_tools");
+const koi_utils = require("@_koi/sdk/utils");
+const WALLET_PATH = "../arweave-key-50JVvg84zA2ae-lQ7j9tL_CIXFlNXr2FXjEcDNXfTkc.json";
 const cronstring = '0 0 0 * * *';
 const version = '1.0.3';
 class koiLogs {
@@ -55,7 +58,23 @@ class koiLogs {
                     "network": req.headers['Network-Type']
                 }
             };
-            console.log(payload);
+            // console.log(payload)
+            // const wallet = await koi.loadWallet(WALLET_PATH);
+            //eslint-disable-next-line no-unused-vars
+            // const address = await koi.getWalletAddress();
+            let verificationProof = JSON.parse(payload.proof.signature + "");
+            let valid = yield koi_utils.KoiUtils.verifySignature(verificationProof);
+            // let valid = koi_utils.KoiUtils.verifySignature({
+            //   verificationProof
+            // // });
+            // let valid=true
+            if (!valid) {
+                console.log("Signature verification failed");
+                return next();
+            }
+            else {
+                console.log("signature verification successful");
+            }
             console.log(this.rawLogFileLocation);
             fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + "\r\n", function (err) {
                 if (err)
