@@ -9,6 +9,7 @@ declare class koiLogs {
     middleware: any;
     private generateLogFiles;
     logger: RequestHandler;
+    difficultyFunction(hash: String): boolean;
     koiLogsHelper(req: Request, res: Response): Promise<void>;
     info(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     koiRawLogsHelper(req: Request, res: Response): Promise<void>;

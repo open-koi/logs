@@ -4,6 +4,7 @@ import { sha256 } from 'js-sha256';
 import cryptoRandomString = require("crypto-random-string")
 import cron from 'node-cron';
 import tmp from 'tmp';
+let crypto = require("crypto")
 // import koi from 'koi_tools';
 // TODO - fix wallet generation and signing using a seed phrase tmp wallet
 import e = require('express');
@@ -101,21 +102,26 @@ class koiLogs{
       }
     }
     let verificationProof = JSON.parse(payload.proof.signature+"")
-    let valid = await koi_utils.KoiUtils.verifySignature(verificationProof)
+    let valid = await koi_utils.KoiUtils.verifySignature(verificationProof);
     if(!valid){
       console.log("Signature verification failed")
       return next()
-    }else {
-      console.log("signature verification successful")
     }
-
-
+    let signatureHash = crypto.createHash("sha256").update(JSON.stringify(verificationProof.signature)).digest("hex");
+    if(!this.difficultyFunction(signatureHash)){
+      console.log("Signature hash incorrect")
+      return next()
+    }
     console.log(this.rawLogFileLocation)
     fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + "\r\n", function (err) {
       if (err) throw err;
     });
     return next()
   }
+
+  difficultyFunction(hash:String){
+    return hash.startsWith("0")|| hash.startsWith("1")
+}
 
   async koiLogsHelper(req: Request, res: Response) {
     var logLocation = this.logFileLocation as string;

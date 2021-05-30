@@ -6,6 +6,7 @@ const js_sha256_1 = require("js-sha256");
 const cryptoRandomString = require("crypto-random-string");
 const node_cron_1 = tslib_1.__importDefault(require("node-cron"));
 const tmp_1 = tslib_1.__importDefault(require("tmp"));
+let crypto = require("crypto");
 // const { koi_tools } = require("koi_tools");
 const koi_utils = require("@_koi/sdk/utils");
 const cronstring = '0 0 0 * * *';
@@ -28,22 +29,18 @@ class koiLogs {
                     "network": req.headers['Network-Type']
                 }
             };
-            // console.log(payload)
-            // const wallet = await koi.loadWallet(WALLET_PATH);
-            //eslint-disable-next-line no-unused-vars
-            // const address = await koi.getWalletAddress();
             let verificationProof = JSON.parse(payload.proof.signature + "");
+            console.log(verificationProof);
             let valid = yield koi_utils.KoiUtils.verifySignature(verificationProof);
-            // let valid = koi_utils.KoiUtils.verifySignature({
-            //   verificationProof
-            // // });
-            // let valid=true
+            console.log(valid);
             if (!valid) {
                 console.log("Signature verification failed");
                 return next();
             }
-            else {
-                console.log("signature verification successful");
+            let signatureHash = crypto.createHash("sha256").update(JSON.stringify(verificationProof.signature)).digest("hex");
+            if (!this.difficultyFunction(signatureHash)) {
+                console.log("Signature hash incorrect");
+                return next();
             }
             console.log(this.rawLogFileLocation);
             fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + "\r\n", function (err) {
@@ -97,6 +94,9 @@ class koiLogs {
                 }
             }));
         });
+    }
+    difficultyFunction(hash) {
+        return hash.startsWith("0") || hash.startsWith("1");
     }
     koiLogsHelper(req, res) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
