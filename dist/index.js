@@ -37,7 +37,8 @@ const node_cron_1 = __importDefault(require("node-cron"));
 const tmp_1 = __importDefault(require("tmp"));
 let crypto = require("crypto");
 // const { koi_tools } = require("koi_tools");
-const koi_utils = require("@_koi/sdk/utils");
+const tools = require("@_koi/sdk/web");
+const koi = new tools.Web();
 const WALLET_PATH = "../arweave-key-50JVvg84zA2ae-lQ7j9tL_CIXFlNXr2FXjEcDNXfTkc.json";
 const cronstring = '0 0 0 * * *';
 const version = '1.0.3';
@@ -60,9 +61,7 @@ class koiLogs {
                 }
             };
             let verificationProof = JSON.parse(payload.proof.signature + "");
-            console.log(verificationProof);
-            let valid = yield koi_utils.KoiUtils.verifySignature(verificationProof);
-            console.log(valid);
+            let valid = yield koi.verifySignature(verificationProof);
             if (!valid) {
                 console.log("Signature verification failed");
                 return next();
@@ -126,7 +125,7 @@ class koiLogs {
         });
     }
     difficultyFunction(hash) {
-        return hash.startsWith("0") || hash.startsWith("1");
+        return hash.startsWith("00") || hash.startsWith("01");
     }
     koiLogsHelper(req, res) {
         return __awaiter(this, void 0, void 0, function* () {

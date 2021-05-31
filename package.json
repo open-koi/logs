@@ -11,7 +11,7 @@
   "author": "Koi Labs Inc.",
   "license": "ISC",
   "dependencies": {
-    "@_koi/sdk": "file:D:/koi/tools/dist",
+    "@_koi/sdk": "^2.1.16-beta.27",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-typescript": "^8.2.0",
     "@types/express": "^4.17.11",

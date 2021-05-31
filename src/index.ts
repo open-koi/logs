@@ -9,7 +9,8 @@ let crypto = require("crypto")
 // TODO - fix wallet generation and signing using a seed phrase tmp wallet
 import e = require('express');
 // const { koi_tools } = require("koi_tools");
-const koi_utils  = require("@_koi/sdk/utils");
+const tools = require("@_koi/sdk/web");
+const koi = new tools.Web();
 const WALLET_PATH = "../arweave-key-50JVvg84zA2ae-lQ7j9tL_CIXFlNXr2FXjEcDNXfTkc.json";
 // const koi = new koi_tools();
 import {
@@ -102,7 +103,7 @@ class koiLogs{
       }
     }
     let verificationProof = JSON.parse(payload.proof.signature+"")
-    let valid = await koi_utils.KoiUtils.verifySignature(verificationProof);
+    let valid = await koi.verifySignature(verificationProof);
     if(!valid){
       console.log("Signature verification failed")
       return next()
@@ -120,7 +121,7 @@ class koiLogs{
   }
 
   difficultyFunction(hash:String){
-    return hash.startsWith("0")|| hash.startsWith("1")
+    return hash.startsWith("00")|| hash.startsWith("01")
 }
 
   async koiLogsHelper(req: Request, res: Response) {

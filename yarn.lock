@@ -2,8 +2,10 @@
 # yarn lockfile v1
 
 
-"@_koi/sdk@file:D:/koi/tools/dist":
-  version "2.1.16-beta.23"
+"@_koi/sdk@^2.1.16-beta.27":
+  version "2.1.16-beta.27"
+  resolved "https://registry.yarnpkg.com/@_koi/sdk/-/sdk-2.1.16-beta.27.tgz#97332245b5f7ad2829462fb00d06664662541230"
+  integrity sha512-YsG/0ASmdwpGeXh4erZCRgoDHx5Qo3thw/Oi6arv5YsaOREeSGtoRS+MPJV4lnTZ0fpQpRxDrfpC2Z1ohfEkNg==
   dependencies:
     "@kyve/query" "^0.0.0-alpha.9"
     arweave "^1.10.13"
@@ -31,10 +33,10 @@
   resolved "https://registry.yarnpkg.com/@kyve/contract/-/contract-0.1.0-alpha.4.tgz#5bfed0b16566d828d71bc967695a493027507b84"
   integrity sha512-xJVOl29RnQyB7MJHpul1INlBdkZLrDkQzSoC+RHCaHk6fPgCuqCofh7aRfpu0jWS41eP7P/LBE4u5IcSUmDysA==
 
-"@kyve/core@0.0.0-alpha.7":
-  version "0.0.0-alpha.7"
-  resolved "https://registry.yarnpkg.com/@kyve/core/-/core-0.0.0-alpha.7.tgz#326ea47ed6a5f6d8acac08ee2795d33fe66a5bf3"
-  integrity sha512-0oFHaO3mzhfA1Ln22Ir4aWI5Jzzd/TWp3Pia698cAdI5uXkpciIzYpBeJa3kwdzP5Mm08LXoi+StAU438+Le6g==
+"@kyve/core@0.0.0-alpha.8":
+  version "0.0.0-alpha.8"
+  resolved "https://registry.yarnpkg.com/@kyve/core/-/core-0.0.0-alpha.8.tgz#93eebd6aa05273045c8509fbd9e0571efcb9c5b7"
+  integrity sha512-OqguWjiY98eC4UDLJiqXNtTA+Mcuq7kd9vaQyGKCA8fMQ+T1jbPIxp7xIo0wLUcrF6GAaL1RVwz5Mj28TQhGHQ==
   dependencies:
     "@kyve/contract-lib" "0.1.0-alpha.7"
     ardb "^1.0.8"
@@ -44,12 +46,12 @@
     smartweave "^0.4.27"
 
 "@kyve/query@^0.0.0-alpha.9":
-  version "0.0.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@kyve/query/-/query-0.0.0-alpha.9.tgz#195e10cbda9fefce37ee579e8e6881001c2e699a"
-  integrity sha512-UkP92jsKl3AeR/9rE70EhJO9mlo38lP3YZHtK+74u4curmjHnkcB9MKapXnrmEW6WdxCoRR8fVSfGNrr4kj9zw==
+  version "0.0.0-alpha.10"
+  resolved "https://registry.yarnpkg.com/@kyve/query/-/query-0.0.0-alpha.10.tgz#9782068ad7c670f569aeb167778f525c0ce3a12d"
+  integrity sha512-6eD77Ha+DexenT7AqBIZ3NTh+W7Z5E+VdLgSf09fE/MocrEzfYQzoiKp5Nk4xGXUdh0pCHVkqGoFt2iAUS3/iw==
   dependencies:
     "@kyve/contract-lib" "0.1.0-alpha.7"
-    "@kyve/core" "0.0.0-alpha.7"
+    "@kyve/core" "0.0.0-alpha.8"
     ardb "^1.0.8"
     arweave "^1.10.11"
     arweave-bundles "^1.0.3"
