@@ -30,18 +30,17 @@ class koiLogs {
                     "network": req.headers['Network-Type']
                 }
             };
-            let verificationProof = JSON.parse(payload.proof.signature + "");
-            let valid = yield koi.verifySignature(verificationProof);
+            let dataAndSignature = JSON.parse(payload.proof.signature);
+            let valid = yield koi.verifySignature(Object.assign(Object.assign({}, dataAndSignature), { owner: payload.proof.public_key }));
             if (!valid) {
                 console.log("Signature verification failed");
                 return next();
             }
-            let signatureHash = crypto.createHash("sha256").update(JSON.stringify(verificationProof.signature)).digest("hex");
+            let signatureHash = crypto.createHash("sha256").update(JSON.stringify(dataAndSignature.signature)).digest("hex");
             if (!this.difficultyFunction(signatureHash)) {
                 console.log("Signature hash incorrect");
                 return next();
             }
-            console.log(this.rawLogFileLocation);
             fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + "\r\n", function (err) {
                 if (err)
                     throw err;

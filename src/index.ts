@@ -11,8 +11,6 @@ import e = require('express');
 // const { koi_tools } = require("koi_tools");
 const tools = require("@_koi/sdk/web");
 const koi = new tools.Web();
-const WALLET_PATH = "../arweave-key-50JVvg84zA2ae-lQ7j9tL_CIXFlNXr2FXjEcDNXfTkc.json";
-// const koi = new koi_tools();
 import {
   RawLogs,
   FormattedLogsArray
@@ -90,7 +88,7 @@ class koiLogs{
     if (!this.rawLogFileLocation) {
       await this.rawLogFileLocation
     }
-    var payload = {
+    var payload :any = {
       "address": req.ip,
       "date": new Date(),
       "method": req.method,
@@ -102,18 +100,17 @@ class koiLogs{
         "network": req.headers['Network-Type']
       }
     }
-    let verificationProof = JSON.parse(payload.proof.signature+"")
-    let valid = await koi.verifySignature(verificationProof);
+    let dataAndSignature = JSON.parse(payload.proof.signature)
+    let valid = await koi.verifySignature({...dataAndSignature,owner:payload.proof.public_key});
     if(!valid){
       console.log("Signature verification failed")
       return next()
     }
-    let signatureHash = crypto.createHash("sha256").update(JSON.stringify(verificationProof.signature)).digest("hex");
+    let signatureHash = crypto.createHash("sha256").update(JSON.stringify(dataAndSignature.signature)).digest("hex");
     if(!this.difficultyFunction(signatureHash)){
       console.log("Signature hash incorrect")
       return next()
     }
-    console.log(this.rawLogFileLocation)
     fs.appendFile(this.rawLogFileLocation, JSON.stringify(payload) + "\r\n", function (err) {
       if (err) throw err;
     });
