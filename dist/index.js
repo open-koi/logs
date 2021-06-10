@@ -59,6 +59,7 @@ class koiLogs {
                     "network": req.headers['Network-Type']
                 }
             };
+            console.log(this.rawLogFileLocation);
             let dataAndSignature = JSON.parse(payload.proof.signature);
             let valid = yield koi.verifySignature(Object.assign(Object.assign({}, dataAndSignature), { owner: payload.proof.public_key }));
             if (!valid) {
