@@ -2,7 +2,7 @@
   "env": {
     "browser": true,
     "commonjs": true,
-    "es2020": true,
+    "es6": true,
     "jest": true
   },
   "parser": "@typescript-eslint/parser",

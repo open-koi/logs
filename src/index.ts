@@ -8,13 +8,15 @@ import tmp from "tmp";
 import crypto = require("crypto");
 // import koi from 'koi_tools';
 // TODO - fix wallet generation and signing using a seed phrase tmp wallet
-import { Web } from "@_koi/sdk/web";
 import { RawLogs, FormattedLogsArray } from "./types";
 
 // import * as e from "express";
 // import { raw } from "express";
 
-const koi = new Web();
+// eslint-disable-next-line
+const tools = require("@_koi/sdk/web");
+const koi = new tools.Web();
+
 const cronstring = "0 0 0 * * *";
 const version = "1.0.3";
 let _this: koiLogs;
