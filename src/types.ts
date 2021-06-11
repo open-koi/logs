@@ -1,34 +1,35 @@
+type CallbackFunction = () => void;
 
 export interface ExpressApp {
-  use: Function,
-  get: Function
+  use: CallbackFunction;
+  get: CallbackFunction;
 }
 
 export interface RawLogs {
-  address: string,
-  user: string,
-  date: string,
-  method: string,
-  uniqueId: string,
-  url: string,
-  ref: string,
-  proof: any,
+  address: string;
+  user: string;
+  date: string;
+  method: string;
+  uniqueId: string;
+  url: string;
+  ref: string;
+  proof: any;
 }
 
 export interface FormattedLogs {
-  addresses: string[],
-  url: string,
-  proofs: any[]
+  addresses: string[];
+  url: string;
+  proofs: any[];
 }
 
 export interface FormattedLogsArray extends Array<FormattedLogs> {
-  [key: string]: any
+  [key: string]: any;
 }
 
 export interface koiLoggerInterface {
-  fileDIR: string,
-  logFileLocation: string,
-  rawLogFileLocation: string,
-  proofFileLocation: string,
-  node_id: string,
+  fileDIR: string;
+  logFileLocation: string;
+  rawLogFileLocation: string;
+  proofFileLocation: string;
+  node_id: string;
 }

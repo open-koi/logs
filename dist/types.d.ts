@@ -1,6 +1,7 @@
+declare type CallbackFunction = () => void;
 export interface ExpressApp {
-    use: Function;
-    get: Function;
+    use: CallbackFunction;
+    get: CallbackFunction;
 }
 export interface RawLogs {
     address: string;
@@ -27,3 +28,4 @@ export interface koiLoggerInterface {
     proofFileLocation: string;
     node_id: string;
 }
+export {};

@@ -1,4 +1,4 @@
-import { Request, Response, RequestHandler } from 'express';
+import { Request, Response, RequestHandler } from "express";
 declare class koiLogs {
     constructor(path: string);
     logFileLocation: string;
@@ -9,7 +9,7 @@ declare class koiLogs {
     middleware: any;
     private generateLogFiles;
     logger: RequestHandler;
-    difficultyFunction(hash: String): boolean;
+    difficultyFunction(hash: string): boolean;
     koiLogsHelper(req: Request, res: Response): Promise<void>;
     info(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     koiRawLogsHelper(req: Request, res: Response): Promise<void>;
