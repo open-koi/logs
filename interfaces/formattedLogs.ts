@@ -1,4 +1,4 @@
 interface FormattedLogs {
-  addresses: string[],
-  url: string
+  addresses: string[];
+  url: string;
 }
