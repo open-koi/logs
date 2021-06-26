@@ -284,8 +284,10 @@ class koiLogs{
       if (this.fileDIR > '') {
         var fileName = this.fileDIR + name;
         try {
-          await writeEmptyFile(fileName)
-          resolve(fileName);
+          if(!fs.existsSync(fileName)){
+            await writeEmptyFile(fileName);
+            resolve (fileName);
+          }
         } catch (err) {
           reject('error writing log file ' + fileName)
         }
