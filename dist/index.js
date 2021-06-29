@@ -115,7 +115,7 @@ class koiLogs {
                     this.logFileLocation = paths[0];
                     this.rawLogFileLocation = paths[1];
                     this.proofFileLocation = paths[2];
-                    //this.koiLogsDailyTask()
+                    this.koiLogsDailyTask();
                     // return their file names to the caller
                     resolve(paths);
                 }
@@ -173,7 +173,7 @@ class koiLogs {
     koiLogsDailyTask() {
         return __awaiter(this, void 0, void 0, function* () {
             const _this = this;
-            _this.logsTask();
+            // _this.logsTask()
             return node_cron_1.default.schedule(cronstring, function () {
                 return __awaiter(this, void 0, void 0, function* () {
                     // console.log('running the log cleanup task once per day on ', new Date());
