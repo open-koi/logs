@@ -86,7 +86,7 @@ class koiLogs {
                     this.logFileLocation = paths[0];
                     this.rawLogFileLocation = paths[1];
                     this.proofFileLocation = paths[2];
-                    this.koiLogsDailyTask();
+                    //this.koiLogsDailyTask()
                     // return their file names to the caller
                     resolve(paths);
                 }
@@ -272,8 +272,8 @@ class koiLogs {
                     try {
                         if (!fs.existsSync(fileName)) {
                             yield writeEmptyFile(fileName);
-                            resolve(fileName);
                         }
+                        resolve(fileName);
                     }
                     catch (err) {
                         reject('error writing log file ' + fileName);

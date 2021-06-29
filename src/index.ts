@@ -163,7 +163,7 @@ class koiLogs{
 
   async koiLogsDailyTask(): Promise<any> {
     const _this = this;
-    _this.logsTask()
+    // _this.logsTask()
     return cron.schedule(cronstring, async function () {
       // console.log('running the log cleanup task once per day on ', new Date());
       let result = await _this.logsTask()
