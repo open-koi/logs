@@ -286,8 +286,9 @@ class koiLogs{
         try {
           if(!fs.existsSync(fileName)){
             await writeEmptyFile(fileName);
-            resolve (fileName);
+            
           }
+          resolve (fileName);
         } catch (err) {
           reject('error writing log file ' + fileName)
         }
