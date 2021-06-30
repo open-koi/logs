@@ -4,6 +4,7 @@ import { sha256 } from 'js-sha256';
 import cryptoRandomString = require("crypto-random-string")
 import cron from 'node-cron';
 import tmp from 'tmp';
+import moment from 'moment';
 let crypto = require("crypto")
 // import koi from 'koi_tools';
 // TODO - fix wallet generation and signing using a seed phrase tmp wallet
@@ -44,27 +45,30 @@ class koiLogs{
     return new Promise(async (resolve, reject) => {
       try {
         // create three files (access.log, daily.log, and proofs.log) with names corresponding to the date
-        var date = new Date();
-        var names = [
-          date.toISOString().slice(0, 10) + '-daily.log',
-          date.toISOString().slice(0, 10) + '-access.log',
-          date.toISOString().slice(0, 10) + '-proofs.log',
+        // var date = new Date();
+        // var names = [
+        //   date.toISOString().slice(0, 10) + '-daily.log',
+        //   date.toISOString().slice(0, 10) + '-access.log',
+        //   date.toISOString().slice(0, 10) + '-proofs.log',
+        // ]
+        let CurrentDate = moment()
+        const currentDateStr = CurrentDate.format("Y-MM-DD"); 
+        const dayBeforeCurrentDateStr = CurrentDate.subtract(1,"days").format("Y-MM-DD")
+        let names = [
+          currentDateStr + '-daily.log',
+          currentDateStr + '-access.log',
+          dayBeforeCurrentDateStr + '-proofs.log',
         ]
 
         let paths: (string)[] = []
         for (var name of names) {
           try {
-
             var path = await this.createLogFile(name) as string;
-            
             paths.push(path)
-
-
           } catch (err) {
             reject(err)
           }
         }
-
         // console.log('created paths', paths, paths[0])
 
         // set the log file names in global vars
@@ -304,7 +308,7 @@ class koiLogs{
   }
 }
 
-export = koiLogs;
+
 
 //////////////////////// Utility Functions //////////////////////////////
 /*
@@ -370,3 +374,5 @@ function getLogSalt() {
   return sha256(cryptoRandomString({ length: 10 }))
 
 }
+
+export = koiLogs;

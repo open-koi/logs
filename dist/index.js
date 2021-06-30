@@ -35,6 +35,7 @@ const js_sha256_1 = require("js-sha256");
 const cryptoRandomString = require("crypto-random-string");
 const node_cron_1 = __importDefault(require("node-cron"));
 const tmp_1 = __importDefault(require("tmp"));
+const moment_1 = __importDefault(require("moment"));
 let crypto = require("crypto");
 // const { koi_tools } = require("koi_tools");
 const tools = require("@_koi/sdk/web");
@@ -93,11 +94,19 @@ class koiLogs {
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     // create three files (access.log, daily.log, and proofs.log) with names corresponding to the date
-                    var date = new Date();
-                    var names = [
-                        date.toISOString().slice(0, 10) + '-daily.log',
-                        date.toISOString().slice(0, 10) + '-access.log',
-                        date.toISOString().slice(0, 10) + '-proofs.log',
+                    // var date = new Date();
+                    // var names = [
+                    //   date.toISOString().slice(0, 10) + '-daily.log',
+                    //   date.toISOString().slice(0, 10) + '-access.log',
+                    //   date.toISOString().slice(0, 10) + '-proofs.log',
+                    // ]
+                    let CurrentDate = moment_1.default();
+                    const currentDateStr = CurrentDate.format("Y-MM-DD");
+                    const dayBeforeCurrentDateStr = CurrentDate.subtract(1, "days").format("Y-MM-DD");
+                    let names = [
+                        currentDateStr + '-daily.log',
+                        currentDateStr + '-access.log',
+                        dayBeforeCurrentDateStr + '-proofs.log',
                     ];
                     let paths = [];
                     for (var name of names) {
