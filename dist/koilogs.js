@@ -11,8 +11,14 @@ let crypto = require("crypto");
 // const { koi_tools } = require("koi_tools");
 const tools = require("@_koi/sdk/web");
 const koi = new tools.Web();
+// import MockDate from 'mockdate';
+// var date = "2021-06-29";
+// var time = "23:57";
+// MockDate.set(moment(date + ' ' + time).toDate());
 const cronstring = '0 0 0 * * *';
-const version = '1.0.3';
+console.log("\n" + moment_1.default() + "\n");
+// const cronstring = "0 */2 * * * *";
+const version = "1.0.3";
 class koiLogs {
     constructor(path) {
         this.logger = (req, res, next) => tslib_1.__awaiter(this, void 0, void 0, function* () {
@@ -20,16 +26,16 @@ class koiLogs {
                 yield this.rawLogFileLocation;
             }
             var payload = {
-                "address": req.ip,
-                "date": new Date(),
-                "method": req.method,
-                "url": req.path,
-                "type": req.protocol,
-                "proof": {
-                    "signature": req.headers['x-request-signature'],
-                    "public_key": req.headers['request-public-key'],
-                    "network": req.headers['Network-Type']
-                }
+                address: req.ip,
+                date: new Date(),
+                method: req.method,
+                url: req.path,
+                type: req.protocol,
+                proof: {
+                    signature: req.headers["x-request-signature"],
+                    public_key: req.headers["request-public-key"],
+                    network: req.headers["Network-Type"],
+                },
             };
             console.log(this.rawLogFileLocation);
             if (payload.proof.signature) {
@@ -39,7 +45,10 @@ class koiLogs {
                     console.log("Signature verification failed");
                     return next();
                 }
-                let signatureHash = crypto.createHash("sha256").update(JSON.stringify(dataAndSignature.signature)).digest("hex");
+                let signatureHash = crypto
+                    .createHash("sha256")
+                    .update(JSON.stringify(dataAndSignature.signature))
+                    .digest("hex");
                 if (!this.difficultyFunction(signatureHash)) {
                     console.log("Signature hash incorrect");
                     return next();
@@ -54,10 +63,17 @@ class koiLogs {
         if (path) {
             this.fileDIR = path;
         }
+        console.log(`\n${this.fileDIR}\n`);
+        this.i = 0;
         this.logFileLocation = "";
         this.rawLogFileLocation = "";
         this.proofFileLocation = "";
-        this.generateLogFiles();
+        this.currentDate = "";
+        this.previousDateFileLocation = "";
+        this.currentLogFileDir = "";
+        this.generateLogFiles().then(() => {
+            this.koiLogsDailyTask();
+        });
         this.node_id = getLogSalt();
     }
     generateLogFiles() {
@@ -71,18 +87,19 @@ class koiLogs {
                     //   date.toISOString().slice(0, 10) + '-access.log',
                     //   date.toISOString().slice(0, 10) + '-proofs.log',
                     // ]
-                    let CurrentDate = moment_1.default();
-                    const currentDateStr = CurrentDate.format("Y-MM-DD");
-                    const dayBeforeCurrentDateStr = CurrentDate.subtract(1, "days").format("Y-MM-DD");
+                    this.currentDate = moment_1.default();
+                    const currentDateStr = this.currentDate.format("Y-MM-DD");
+                    const dayBeforeCurrentDateStr = this.currentDate.subtract(1, "days").format("Y-MM-DD");
                     let names = [
-                        currentDateStr + '-daily.log',
-                        currentDateStr + '-access.log',
-                        dayBeforeCurrentDateStr + '-proofs.log',
+                        dayBeforeCurrentDateStr + "-daily.log",
+                        currentDateStr + "-access.log",
+                        currentDateStr + "-proofs.log",
+                        currentDateStr + "-daily.log"
                     ];
                     let paths = [];
                     for (var name of names) {
                         try {
-                            var path = yield this.createLogFile(name);
+                            var path = (yield this.createLogFile(name));
                             paths.push(path);
                         }
                         catch (err) {
@@ -95,7 +112,7 @@ class koiLogs {
                     this.logFileLocation = paths[0];
                     this.rawLogFileLocation = paths[1];
                     this.proofFileLocation = paths[2];
-                    this.koiLogsDailyTask();
+                    this.currentLogFileDir = paths[3];
                     // return their file names to the caller
                     resolve(paths);
                 }
@@ -114,7 +131,7 @@ class koiLogs {
             // console.log('entered koiLogsHelper at ', new Date(), !this, logLocation)
             if (logLocation === "")
                 yield this.generateLogFiles();
-            fs.readFile(logLocation, 'utf8', (err, data) => {
+            fs.readFile(logLocation, "utf8", (err, data) => {
                 if (err) {
                     // console.error(err)
                     // console.log('sent err ', err, new Date());
@@ -130,7 +147,7 @@ class koiLogs {
             return res.status(200).send({
                 node: this.node_id,
                 version: version,
-                timer: cronstring
+                timer: cronstring,
             });
         });
     }
@@ -140,7 +157,7 @@ class koiLogs {
             // console.log('entered koiRawLogsHelper at ', new Date(), !this, logLocation)
             if (logLocation === "")
                 yield this.generateLogFiles();
-            fs.readFile(logLocation, 'utf8', (err, data) => {
+            fs.readFile(logLocation, "utf8", (err, data) => {
                 if (err) {
                     // console.error(err)
                     res.status(500).send(err);
@@ -153,7 +170,7 @@ class koiLogs {
     koiLogsDailyTask() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const _this = this;
-            // _this.logsTask()
+            _this.logsTask(false);
             return node_cron_1.default.schedule(cronstring, function () {
                 return tslib_1.__awaiter(this, void 0, void 0, function* () {
                     // console.log('running the log cleanup task once per day on ', new Date());
@@ -163,17 +180,26 @@ class koiLogs {
             });
         });
     }
-    logsTask() {
+    logsTask(deleteRaw = true) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => tslib_1.__awaiter(this, void 0, void 0, function* () {
                 try {
                     let masterSalt = getLogSalt();
                     // then get the raw logs
-                    let rawLogs = yield this.readRawLogs(masterSalt);
-                    let sorted = yield sortAndFilterLogs(rawLogs);
+                    let rawLogs = (yield this.readRawLogs(masterSalt));
+                    console.log(`read rawLogs for -- ${this.rawLogFileLocation}`); //02
+                    let sorted = (yield sortAndFilterLogs(rawLogs));
+                    console.log(`sorted rawLogs for -- ${this.rawLogFileLocation}`); //02
                     let result = yield this.writeDailyLogs(sorted);
+                    console.log(`wrote daily for -- ${this.logFileLocation}`);
                     // last, clear old logs
-                    yield this.clearRawLogs();
+                    if (deleteRaw) {
+                        yield this.clearRawLogs();
+                        console.log("\nLOGS Cleared\n");
+                        let result = yield this.writeDailyLogs(sorted);
+                        console.log(`wrote daily for -- ${this.currentLogFileDir}`);
+                        this.generateLogFiles();
+                    }
                     resolve(result);
                 }
                 catch (err) {
@@ -246,10 +272,10 @@ class koiLogs {
                     gateway: this.node_id,
                     lastUpdate: new Date(),
                     summary: new Array(),
-                    signature: '',
-                    version: version
+                    signature: "",
+                    version: version,
                 };
-                // sign it 
+                // sign it
                 data.signature = signLogs();
                 for (var key in logs) {
                     var log = logs[key];
@@ -257,7 +283,7 @@ class koiLogs {
                         data.summary.push(log);
                     }
                 }
-                fs.writeFile(this.logFileLocation, JSON.stringify(data), {}, function (err) {
+                fs.writeFile(this.currentLogFileDir, JSON.stringify(data), {}, function (err) {
                     if (err) {
                         // console.log('ERROR SAVING ACCESS LOG', err)
                         resolve({ success: false, logs: data, error: err });
@@ -276,7 +302,7 @@ class koiLogs {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => tslib_1.__awaiter(this, void 0, void 0, function* () {
                 // resolve('/tmp/' + name as string)
-                if (this.fileDIR > '') {
+                if (this.fileDIR > "") {
                     var fileName = this.fileDIR + name;
                     try {
                         if (!fs.existsSync(fileName)) {
@@ -285,7 +311,7 @@ class koiLogs {
                         resolve(fileName);
                     }
                     catch (err) {
-                        reject('error writing log file ' + fileName);
+                        reject("error writing log file " + fileName);
                     }
                 }
                 else {
@@ -327,7 +353,7 @@ function sortAndFilterLogs(logs) {
                             formatted_logs[log.uniqueId] = {
                                 addresses: [log.address],
                                 url: log.url,
-                                proofs: [log.proof]
+                                proofs: [log.proof],
                             };
                         }
                         else {
