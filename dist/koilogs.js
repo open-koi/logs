@@ -199,7 +199,7 @@ class koiLogs {
                     }
                     // last, clear old logs
                     if (deleteRaw) {
-                        yield this.clearRawLogs();
+                        // await this.clearRawLogs();
                         console.log("\nLOGS Cleared\n");
                         let result = yield this.writeDailyLogs(sorted, this.currentLogFileDir);
                         console.log(`wrote daily for -- ${this.currentLogFileDir}`);
