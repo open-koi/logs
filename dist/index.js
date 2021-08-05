@@ -45,7 +45,7 @@ const koi = new tools.Web();
 // var time = "23:57";
 // MockDate.set(moment(date + ' ' + time).toDate());
 const cronstring = "0 0 0 * * *";
-console.log("\n" + moment_1.default() + "\n");
+// console.log("\n" + moment() + "\n");
 // const cronstring = "0 */2 * * * *";
 const version = "1.0.3";
 class koiLogs {
@@ -66,7 +66,7 @@ class koiLogs {
                     network: req.headers["Network-Type"],
                 },
             };
-            console.log(this.rawLogFileLocation);
+            // console.log(this.rawLogFileLocation);
             if (payload.proof.signature) {
                 let dataAndSignature = JSON.parse(payload.proof.signature);
                 let valid = yield koi.verifySignature(Object.assign(Object.assign({}, dataAndSignature), { owner: payload.proof.public_key }));
@@ -92,7 +92,7 @@ class koiLogs {
         if (path) {
             this.fileDIR = path;
         }
-        console.log(`\n${this.fileDIR}\n`);
+        // console.log(`\n${this.fileDIR}\n`);
         this.i = 0;
         this.logFileLocation = "";
         this.rawLogFileLocation = "";
