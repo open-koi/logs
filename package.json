@@ -1,6 +1,6 @@
 {
   "name": "koi-logs",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Koi is a network designed to reward and help to coordinate the creation of public data resources. Install the SDK to register your gateway to the network and begin receiving traffic awards when you contribute logging data.",
   "main": "dist/index.js",
   "scripts": {
@@ -11,6 +11,7 @@
   "author": "Koi Labs Inc.",
   "license": "ISC",
   "dependencies": {
+    "@_koi/sdk": "^2.1.16-beta.27",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-typescript": "^8.2.0",
     "@types/express": "^4.17.11",
@@ -22,7 +23,8 @@
     "express": "^4.17.1",
     "fs": "^0.0.1-security",
     "js-sha256": "^0.9.0",
-    "koi_tools": "git+https://github.com/open-koi/tools.git",
+    "mockdate": "^3.0.5",
+    "moment": "^2.29.1",
     "morgan": "^1.10.0",
     "node-cron": "^2.0.3",
     "path": "^0.12.7",

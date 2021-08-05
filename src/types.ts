@@ -31,4 +31,5 @@ export interface koiLoggerInterface {
   rawLogFileLocation: string,
   proofFileLocation: string,
   node_id: string,
+  currentDate:string,
 }

@@ -1,14 +1,19 @@
-import { Request, Response, RequestHandler } from 'express';
+import { Request, Response, RequestHandler } from "express";
 declare class koiLogs {
     constructor(path: string);
     logFileLocation: string;
     rawLogFileLocation: string;
     proofFileLocation: string;
+    currentLogFileDir: string;
     fileDIR: any;
     node_id: string;
     middleware: any;
+    currentDate: any;
+    previousDateFileLocation: string;
+    i: number;
     private generateLogFiles;
     logger: RequestHandler;
+    difficultyFunction(hash: String): boolean;
     koiLogsHelper(req: Request, res: Response): Promise<void>;
     info(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     koiRawLogsHelper(req: Request, res: Response): Promise<void>;
